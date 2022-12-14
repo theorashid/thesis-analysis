@@ -1,3 +1,20 @@
+# large data
+*.nc
+*.csv
+*.rds
+data/*
+
+# Mac OS X files
+.DS_Store
+
+# python files
+/.python-version
+/.pytype/
+/dist/
+/docs/_build/
+/src/*.egg-info/
+__pycache__/
+
 # History files
 .Rhistory
 .Rapp.history
