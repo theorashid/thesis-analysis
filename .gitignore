@@ -2,7 +2,6 @@
 *.nc
 *.csv
 *.rds
-data/*
 
 # Mac OS X files
 .DS_Store
