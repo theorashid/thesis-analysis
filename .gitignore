@@ -3,6 +3,9 @@
 *.csv
 *.rds
 
+# logs
+*.log
+
 # Mac OS X files
 .DS_Store
 
