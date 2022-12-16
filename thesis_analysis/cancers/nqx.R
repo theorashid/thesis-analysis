@@ -1,5 +1,4 @@
-"Convert mx rates to nqx
-"
+"Convert mx rates to nqx"
 
 nqx <- function(age, mx, ax, n, x) {
   mx <- mx[!is.na(age)]
