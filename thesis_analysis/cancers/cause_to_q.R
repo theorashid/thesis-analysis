@@ -41,10 +41,10 @@ system.time(
 )
 
 dimnames(death_rates) <- list(
-  year=hyper_transforms(nc)$year$year,
-  LAD=hyper_transforms(nc)$LAD$LAD,
-  sample=hyper_transforms(nc)$sample$index,
-  cause=hyper_transforms(nc)$cause$cause
+  year = hyper_transforms(nc)$year$year,
+  LAD = hyper_transforms(nc)$LAD$LAD,
+  sample = hyper_transforms(nc)$sample$index,
+  cause = hyper_transforms(nc)$cause$cause
 )
 
 write_rds(

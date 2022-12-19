@@ -40,9 +40,9 @@ system.time(
 )
 
 dimnames(death_rates) <- list(
-  year=hyper_transforms(nc)$year$year,
-  MSOA=hyper_transforms(nc)$MSOA$MSOA,
-  sample=hyper_transforms(nc)$sample$index
+  year = hyper_transforms(nc)$year$year,
+  MSOA = hyper_transforms(nc)$MSOA$MSOA,
+  sample = hyper_transforms(nc)$sample$index
 )
 
 write_rds(
