@@ -16,14 +16,34 @@ library(here)
 library(tidyverse)
 library(cowplot)
 library(colorspace)
+
+source(here("thesis_analysis", "theme_thesis.R"))
 ```
 
 ## data
+
 ```{r data}
 args <- lst(
   region = "LAD",
   sex = "female",
   model = "car_as_at",
+)
+
+cause_q <- read_rds(
+  here(
+    "data",
+    "death_rates",
+    str_c(
+      args$region,
+      "_",
+      args$sex,
+      "_",
+      args$model,
+      "_",
+      "cancers_80q0",
+      ".rds"
+    )
+  )
 )
 
 if (args$sex == "male") {
@@ -97,26 +117,16 @@ region_col <- c(
 )
 ```
 
-```{r}
-cause_q <- read_rds(
-  here(
-    "data",
-    "death_rates",
-    str_c(args$region, "_", args$sex, "_", args$model, "_", "cancers_80q0", ".rds")
-  )
-)
-```
-
-
-```{r calculate median 80q0 in 2019}
+```{r calculate median 80q0 in over time}
 median_q <- apply(
-  X = cause_q["2019", , , ],
-  MARGIN = c(1, 3),
+  X = cause_q,
+  MARGIN = c(1, 2, 4),
   FUN = median
 ) |>
   as.data.frame.table(stringsAsFactors = FALSE) |>
   as_tibble() |>
   rename(`80q0` = Freq) |>
+  mutate(year = as.integer(year)) |>
   arrange()
 ```
 
@@ -200,10 +210,53 @@ save_plot(here("figures", "cancer", str_c("pairs_80q0_2019_", args$sex, ".pdf"))
 p
 ```
 
+
+## time series
+
+```{r plot time series}
+for (cancer in cause_list) {
+  print(cancer)
+  p <- median_q |>
+    filter(cause == cancer) |>
+    mutate(LAD2020 = LAD) |>
+    left_join(lookup) |>
+    ggplot(
+      aes(
+        x = year,
+        y = `80q0`,
+        group = LAD
+      )
+    ) +
+    geom_line(size = 0.1) +
+    facet_wrap(
+      ~ factor(GOR2011NM, levels = regions),
+      labeller = label_wrap_gen(20)
+    ) +
+    scale_x_continuous(breaks = scales::breaks_width(2)) +
+    labs(
+      x = "",
+      y = "Probability of death",
+      caption = cancer
+    ) +
+    theme_thesis()
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "cancers",
+      "figures",
+      str_c("series_", str_replace(cancer, " ", "_"), "_", args$sex, ".pdf")
+    ),
+    p
+  )
+}
+```
+
 ## poverty
 
 ```{r plot IMD}
 p <- median_q |>
+  filter(year == 2019) |>
   mutate(LAD2020 = LAD) |>
   left_join(IMD |> select(LAD2020, `income rank`)) |>
   left_join(lookup) |>
@@ -229,13 +282,9 @@ p <- median_q |>
     breaks = c(n_lad / 7, 6 * n_lad / 7),
     labels = c("Least deprived", "Most deprived")
   ) +
-  theme_minimal() +
+  theme_thesis() +
   theme(
-    legend.position = "right",
-    legend.text = element_text(size = 5),
     legend.key.size = unit(0.01, "npc"),
-    strip.text = element_text(size = 5),
-    axis.text = element_text(size = 5),
     panel.grid.major.x = element_blank(),
     panel.grid.minor.x = element_blank()
   )
@@ -249,11 +298,10 @@ save_plot(
   ),
   p
 )
-
-p
 ```
 
 ## distribution
+
 ```{r calculate quantiles 80q0 in 2002 and 2019}
 quantile_q <- apply(
   X = cause_q[c("2002", "2019"), , , ],
@@ -275,7 +323,13 @@ p <- quantile_q |>
   ggplot(aes(x = rank, colour = year)) +
   geom_segment(aes(xend = rank, y = `2.5%`, yend = `97.5%`), alpha = 0.1) +
   geom_point(aes(y = `50%`), size = 0.1) +
-  facet_wrap(~ factor(cause, levels = cause_list), scales = "free") +
+  facet_wrap(
+    ~ factor(cause,
+      levels = cause_list
+    ),
+    scales = "free",
+    labeller = label_wrap_gen(20)
+  ) +
   labs(
     x = "Ranking of median 80q0 across districts",
     y = "Probability of death"
@@ -284,11 +338,9 @@ p <- quantile_q |>
     values = c("Grey50", "Grey10"),
     name = ""
   ) +
-  theme_minimal() +
+  theme_thesis() +
   theme(
     legend.position = "top",
-    strip.text = element_text(size = 5),
-    axis.text.y = element_text(size = 5),
     axis.text.x = element_blank(),
     axis.ticks.x = element_blank(),
     panel.grid.major.x = element_blank(),
@@ -304,6 +356,4 @@ save_plot(
   ),
   p
 )
-
-p
 ```
