@@ -214,10 +214,10 @@ p
 ## time series
 
 ```{r plot time series}
-for (cancer in cause_list) {
-  print(cancer)
+for (disease in cause_list) {
+  print(disease)
   p <- median_q |>
-    filter(cause == cancer) |>
+    filter(cause == disease) |>
     mutate(LAD2020 = LAD) |>
     left_join(lookup) |>
     ggplot(
@@ -236,16 +236,20 @@ for (cancer in cause_list) {
     labs(
       x = "",
       y = "Probability of death",
-      caption = cancer
+      caption = disease
     ) +
-    theme_thesis()
+    theme_thesis() +
+    theme(
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank()
+    )
 
   save_plot(
     here(
       "thesis_analysis",
       "cancers",
       "figures",
-      str_c("series_", str_replace(cancer, " ", "_"), "_", args$sex, ".pdf")
+      str_c("series_", str_replace(disease, " ", "_"), "_", args$sex, ".pdf")
     ),
     p
   )
@@ -286,7 +290,8 @@ p <- median_q |>
   theme(
     legend.key.size = unit(0.01, "npc"),
     panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank()
+    panel.grid.minor.x = element_blank(),
+    axis.ticks.x = element_blank()
   )
 
 save_plot(
@@ -298,6 +303,54 @@ save_plot(
   ),
   p
 )
+```
+
+```{r plot IMD region}
+for (disease in cause_list) {
+  p <- median_q |>
+    filter(year == 2019) |>
+    filter(cause == disease) |>
+    mutate(LAD2020 = LAD) |>
+    left_join(IMD |> select(LAD2020, `income rank`)) |>
+    left_join(lookup) |>
+    ggplot(
+      aes(
+        x = `income rank`,
+        y = `80q0`
+      )
+    ) +
+    geom_point(size = 0.1) +
+    facet_wrap(
+      ~ factor(GOR2011NM, levels = regions),
+      labeller = label_wrap_gen(20)
+    ) +
+    labs(
+      x = "Income deprivation rank",
+      y = "Probability of death in 2019"
+    ) +
+    scale_colour_manual(values = region_col, name = "") +
+    scale_x_continuous(
+      breaks = c(n_lad / 7, 6 * n_lad / 7),
+      labels = c("Least deprived", "Most deprived")
+    ) +
+    theme_thesis() +
+    theme(
+      legend.key.size = unit(0.01, "npc"),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
+      axis.ticks.x = element_blank()
+    )
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "cancers",
+      "figures",
+      str_c("IMD_", str_replace(disease, " ", "_"), "_", args$sex, ".pdf")
+    ),
+    p
+  )
+}
 ```
 
 ## distribution
