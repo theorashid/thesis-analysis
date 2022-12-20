@@ -16,6 +16,7 @@ library(here)
 library(tidyverse)
 library(cowplot)
 library(colorspace)
+library(GGally)
 
 source(here("thesis_analysis", "theme_thesis.R"))
 ```
@@ -144,72 +145,65 @@ median_q_change <- apply(
 ## pair plots
 
 Pair plot of 80q0 in 2019
-```{r 80q0 pair plot in 2019}
-corr_plot <- function(data, mapping, method = "p", use = "pairwise", ...) {
-  # grab data
-  x <- eval_data_col(data, mapping$x)
-  y <- eval_data_col(data, mapping$y)
-
-  # calculate correlation
-  corr <- cor(x, y, method = method, use = use)
-
-  # calculate colour based on correlation value
-  # Change this to suit: possibly extend to add as an argument of `my_fn`
-  pal <- divergingx_hcl(n = 100, palette = "Temps")
-  fill <- pal[findInterval(corr, seq(-1, 1, length = 100))]
-
-  ggally_text(
-    label = as.character(round(corr, 2)),
-    mapping = aes(),
-    xP = 0.5, yP = 0.5,
-    color = "black",
-    ...
-  ) +
-    theme_void() +
-    theme(panel.background = element_rect(fill = fill))
-}
-
+```{r 80q0 correlation plot in 2019}
 p <- median_q |>
-  left_join(lookup) |>
+  filter(year == 2019) |>
   pivot_wider(
-    id_cols = c(LAD2020, GOR2011NM),
+    id_cols = c(LAD),
     names_from = cause,
     values_from = `80q0`
   ) |>
-  ggpairs(
-    columns = cause_list,
-    upper = list(continuous = corr_plot),
-    lower = list(
-      continuous = function(data, mapping, ...) {
-        ggally_points(data = data, mapping = mapping, size = 0.1) +
-          theme_bw()
-      },
-      mapping = aes(color = factor(GOR2011NM, levels = regions))
-    ),
-    diag = list(
-      continuous = function(data, mapping, ...) {
-        ggally_densityDiag(data = data, mapping = mapping) +
-          theme_bw()
-      }
-    ),
-    labeller = label_wrap_gen(20),
-    legend = c(2, 1)
-  ) +
-  scale_colour_manual(values = region_col, name = "") +
-  theme(
-    legend.position = "right",
-    legend.text = element_text(size = 5),
-    legend.key.size = unit(0.01, "npc"),
-    strip.text = element_text(size = 3),
-    axis.text = element_text(size = 3),
-    panel.grid = element_blank()
-  )
+  select(all_of(cause_list)) |>
+  ggcorr(size = 0)
 
-save_plot(here("figures", "cancer", str_c("pairs_80q0_2019_", args$sex, ".pdf")), p)
+p <- p + geom_text(
+  data = tibble(x = seq(cause_list), y = seq(cause_list), lbs = cause_list),
+  aes(x, y, label = str_wrap(lbs, 15)),
+  nudge_x = -0.5,
+  hjust = 0,
+  size = 1.5
+) +
+  theme_thesis() +
+  theme(axis.line = element_blank())
 
-p
+save_plot(
+  here(
+    "thesis_analysis",
+    "cancers",
+    "figures",
+    str_c("correlation_", args$sex, ".pdf")
+  ),
+  p
+)
 ```
 
+```{r 80q0 pair plot in 2019}
+p <- median_q |>
+  filter(year == 2019) |>
+  pivot_wider(
+    id_cols = c(LAD),
+    names_from = cause,
+    values_from = `80q0`
+  ) |>
+  select(all_of(cause_list)) |>
+  ggpairs(
+    lower = list(continuous = "blank"),
+    upper = list(continuous = wrap("points", alpha = 0.3, size = 0.1)),
+    diag = list(continuous = "blankDiag"),
+    labeller = label_wrap_gen(20),
+  ) +
+  theme_thesis()
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "cancers",
+    "figures",
+    str_c("pairs_", args$sex, ".pdf")
+  ),
+  p
+)
+```
 
 ## time series
 
