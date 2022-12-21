@@ -16,6 +16,9 @@ library(here)
 library(tidyverse)
 library(cowplot)
 library(colorspace)
+library(geojsonsf)
+library(sf)
+library(ggridges)
 library(GGally)
 
 source(here("thesis_analysis", "theme_thesis.R"))
@@ -47,6 +50,8 @@ cause_q <- read_rds(
   )
 )
 
+shape <- geojson_sf(here("data", "covariates", "LAD2020_ENG_BGC.geojson"))
+
 if (args$sex == "male") {
   cause_list <- c(
     "Trachea bronchus lung cancers",
@@ -77,7 +82,7 @@ if (args$sex == "male") {
   )
 }
 
-IMD <- read_csv(here("data", "covariates", "IMD_LAD2020_2019.csv")) |>
+imd <- read_csv(here("data", "covariates", "IMD_LAD2020_2019.csv")) |>
   mutate(`income rank` = rank(`income score`))
 
 lookup <- read_csv(
@@ -142,6 +147,74 @@ median_q_change <- apply(
   rename(d80q0 = Freq)
 ```
 
+## maps
+
+Maps of 80q0 in 2019.
+```{r map 80q0 in 2019}
+for (disease in cause_list) {
+  print(disease)
+  map <- shape |>
+    left_join(
+      median_q |> filter(cause == disease) |> mutate(LAD2020 = LAD)
+    ) |>
+    ggplot(aes(fill = `80q0`)) +
+    geom_sf(colour = "white", size = 0.1) +
+    scale_fill_continuous_sequential(
+      palette = "Reds",
+      name = ""
+    ) +
+    theme_void() +
+    theme(legend.position = "none")
+  guides(
+    fill = guide_colorbar(
+      title.position = "top",
+      title.hjust = 0
+    )
+  )
+
+  p <- median_q |>
+    filter(cause == disease) |>
+    ggplot(aes(x = `80q0`, y = 1, fill = after_stat(x))) +
+    geom_density_ridges_gradient(colour = "#cccccc", size = 0.1) +
+    scale_fill_continuous_sequential(
+      palette = "Reds",
+      name = str_c("Probability of death for \n", disease)
+    ) +
+    scale_y_continuous(expand = c(0, 0)) +
+    theme_void() +
+    theme(
+      legend.direction = "horizontal",
+      legend.position = "bottom",
+      legend.key.width = unit(15, units = "pt"),
+      legend.key.height = unit(5, units = "pt"),
+      legend.text = element_text(size = 4),
+      legend.title = element_text(
+        size = 4,
+        face = "bold"
+      )
+    ) +
+    guides(
+      fill = guide_colorbar(
+        title.position = "bottom",
+        title.hjust = 0
+      )
+    )
+
+  grid <- ggdraw(map) +
+    draw_plot(p, -0.15, 0.05, scale = 0.2)
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "cancers",
+      "figures",
+      str_c("map_", str_replace(disease, " ", "_"), "_", args$sex, ".pdf")
+    ),
+    grid
+  )
+}
+```
+
 ## pair plots
 
 Pair plot of 80q0 in 2019
@@ -178,31 +251,31 @@ save_plot(
 ```
 
 ```{r 80q0 pair plot in 2019}
-p <- median_q |>
-  filter(year == 2019) |>
-  pivot_wider(
-    id_cols = c(LAD),
-    names_from = cause,
-    values_from = `80q0`
-  ) |>
-  select(all_of(cause_list)) |>
-  ggpairs(
-    lower = list(continuous = "blank"),
-    upper = list(continuous = wrap("points", alpha = 0.3, size = 0.1)),
-    diag = list(continuous = "blankDiag"),
-    labeller = label_wrap_gen(20),
-  ) +
-  theme_thesis()
+# p <- median_q |>
+#   filter(year == 2019) |>
+#   pivot_wider(
+#     id_cols = c(LAD),
+#     names_from = cause,
+#     values_from = `80q0`
+#   ) |>
+#   select(all_of(cause_list)) |>
+#   ggpairs(
+#     lower = list(continuous = "blank"),
+#     upper = list(continuous = wrap("points", alpha = 0.3, size = 0.1)),
+#     diag = list(continuous = "blankDiag"),
+#     labeller = label_wrap_gen(20),
+#   ) +
+#   theme_thesis()
 
-save_plot(
-  here(
-    "thesis_analysis",
-    "cancers",
-    "figures",
-    str_c("pairs_", args$sex, ".pdf")
-  ),
-  p
-)
+# save_plot(
+#   here(
+#     "thesis_analysis",
+#     "cancers",
+#     "figures",
+#     str_c("pairs_", args$sex, ".pdf")
+#   ),
+#   p
+# )
 ```
 
 ## time series
@@ -256,7 +329,7 @@ for (disease in cause_list) {
 p <- median_q |>
   filter(year == 2019) |>
   mutate(LAD2020 = LAD) |>
-  left_join(IMD |> select(LAD2020, `income rank`)) |>
+  left_join(imd |> select(LAD2020, `income rank`)) |>
   left_join(lookup) |>
   ggplot(
     aes(
@@ -305,7 +378,7 @@ for (disease in cause_list) {
     filter(year == 2019) |>
     filter(cause == disease) |>
     mutate(LAD2020 = LAD) |>
-    left_join(IMD |> select(LAD2020, `income rank`)) |>
+    left_join(imd |> select(LAD2020, `income rank`)) |>
     left_join(lookup) |>
     ggplot(
       aes(

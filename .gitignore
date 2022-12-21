@@ -2,6 +2,8 @@
 *.nc
 *.csv
 *.rds
+*.json
+*.geojson
 
 # logs
 *.log
