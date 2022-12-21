@@ -27,11 +27,7 @@ source(here("thesis_analysis", "theme_thesis.R"))
 ## data
 
 ```{r data}
-args <- lst(
-  region = "LAD",
-  sex = "female",
-  model = "car_as_at",
-)
+args <- lst(region = "LAD", sex = "male", model = "car_as_at")
 
 cause_q <- read_rds(
   here(
@@ -208,7 +204,7 @@ for (disease in cause_list) {
       "thesis_analysis",
       "cancers",
       "figures",
-      str_c("map_", str_replace(disease, " ", "_"), "_", args$sex, ".pdf")
+      str_c(args$sex, "_map_", str_replace_all(disease, " ", "_"), ".pdf")
     ),
     grid
   )
@@ -244,7 +240,7 @@ save_plot(
     "thesis_analysis",
     "cancers",
     "figures",
-    str_c("correlation_", args$sex, ".pdf")
+    str_c(args$sex, "_correlation", ".pdf")
   ),
   p
 )
@@ -272,7 +268,7 @@ save_plot(
 #     "thesis_analysis",
 #     "cancers",
 #     "figures",
-#     str_c("pairs_", args$sex, ".pdf")
+#     str_c(args$sex, "_pairs"".pdf")
 #   ),
 #   p
 # )
@@ -316,7 +312,7 @@ for (disease in cause_list) {
       "thesis_analysis",
       "cancers",
       "figures",
-      str_c("series_", str_replace(disease, " ", "_"), "_", args$sex, ".pdf")
+      str_c(args$sex, "_series_", str_replace_all(disease, " ", "_"), ".pdf")
     ),
     p
   )
@@ -366,7 +362,7 @@ save_plot(
     "thesis_analysis",
     "cancers",
     "figures",
-    str_c("IMD_", args$sex, ".pdf")
+    str_c(args$sex, "_IMD", ".pdf")
   ),
   p
 )
@@ -374,6 +370,7 @@ save_plot(
 
 ```{r plot IMD region}
 for (disease in cause_list) {
+  print(disease)
   p <- median_q |>
     filter(year == 2019) |>
     filter(cause == disease) |>
@@ -413,7 +410,7 @@ for (disease in cause_list) {
       "thesis_analysis",
       "cancers",
       "figures",
-      str_c("IMD_", str_replace(disease, " ", "_"), "_", args$sex, ".pdf")
+      str_c(args$sex, "_IMD_", str_replace_all(disease, " ", "_"), ".pdf")
     ),
     p
   )
@@ -472,7 +469,7 @@ save_plot(
     "thesis_analysis",
     "cancers",
     "figures",
-    str_c("distribution_", args$sex, ".pdf")
+    str_c(args$sex, "_distribution", ".pdf")
   ),
   p
 )
