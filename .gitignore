@@ -4,6 +4,7 @@
 *.rds
 *.json
 *.geojson
+*.pdf
 
 # logs
 *.log
