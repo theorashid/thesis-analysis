@@ -246,6 +246,37 @@ save_plot(
 )
 ```
 
+```{r d80q0 correlation plot in 2019}
+p <- median_q_change |>
+  pivot_wider(
+    id_cols = c(LAD),
+    names_from = cause,
+    values_from = `d80q0`
+  ) |>
+  select(all_of(cause_list)) |>
+  ggcorr(size = 0)
+
+p <- p + geom_text(
+  data = tibble(x = seq(cause_list), y = seq(cause_list), lbs = cause_list),
+  aes(x, y, label = str_wrap(lbs, 15)),
+  nudge_x = -0.5,
+  hjust = 0,
+  size = 1.5
+) +
+  theme_thesis() +
+  theme(axis.line = element_blank())
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "cancers",
+    "figures",
+    str_c(args$sex, "_correlation_change", ".pdf")
+  ),
+  p
+)
+```
+
 ```{r 80q0 pair plot in 2019}
 # p <- median_q |>
 #   filter(year == 2019) |>
