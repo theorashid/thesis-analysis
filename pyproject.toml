@@ -14,9 +14,8 @@ pandas = "^1.5.2"
 
 [tool.poetry.group.dev.dependencies]
 black = "^22.12.0"
-flake8 = "^6.0.0"
-isort = "^5.11.2"
 pre-commit = "^2.20.0"
+ruff = "^0.0.202"
 
 [build-system]
 requires = ["poetry-core"]
