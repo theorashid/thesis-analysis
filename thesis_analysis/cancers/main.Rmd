@@ -32,7 +32,7 @@ args <- lst(region = "LAD", sex = "male", model = "car_as_at")
 cause_q <- read_rds(
   here(
     "data",
-    "death_rates",
+    "life_table",
     str_c(
       args$region,
       "_",
@@ -57,10 +57,11 @@ if (args$sex == "male") {
     "Lymphomas multiple myeloma",
     "Pancreas cancer",
     "Bladder cancer",
+    "Stomach cancer",
     "Leukaemia",
     "Liver cancer",
-    "Kidney and ureter cancer",
-    "All other cancers"
+    "All other cancers",
+    "All cancers"
   )
 } else {
   cause_list <- c(
@@ -73,8 +74,9 @@ if (args$sex == "male") {
     "Oesophagus cancer",
     "Leukaemia",
     "Corpus uteri cancer",
-    "Liver cancer",
-    "All other cancers"
+    "Stomach cancer",
+    "All other cancers",
+    "All cancers"
   )
 }
 
@@ -145,8 +147,8 @@ median_q_change <- apply(
 
 ## maps
 
-Maps of 80q0 in 2019.
-```{r map 80q0 in 2019}
+Maps of 80q0 in 2019 and d80q0 2002-19.
+```{r map 80q0}
 for (disease in cause_list) {
   print(disease)
   map <- shape |>
@@ -161,12 +163,6 @@ for (disease in cause_list) {
     ) +
     theme_void() +
     theme(legend.position = "none")
-  guides(
-    fill = guide_colorbar(
-      title.position = "top",
-      title.hjust = 0
-    )
-  )
 
   p <- median_q |>
     filter(cause == disease) |>
@@ -181,11 +177,11 @@ for (disease in cause_list) {
     theme(
       legend.direction = "horizontal",
       legend.position = "bottom",
-      legend.key.width = unit(15, units = "pt"),
-      legend.key.height = unit(5, units = "pt"),
-      legend.text = element_text(size = 4),
+      legend.key.width = unit(9, units = "pt"),
+      legend.key.height = unit(3, units = "pt"),
+      legend.text = element_text(size = 3),
       legend.title = element_text(
-        size = 4,
+        size = 3,
         face = "bold"
       )
     ) +
@@ -196,8 +192,40 @@ for (disease in cause_list) {
       )
     )
 
-  grid <- ggdraw(map) +
-    draw_plot(p, -0.15, 0.05, scale = 0.2)
+  map_change <- shape |>
+    left_join(
+      median_q_change |> filter(cause == disease) |> mutate(LAD2020 = LAD)
+    ) |>
+    ggplot(aes(fill = `d80q0`)) +
+    geom_sf(colour = "white", size = 0.1) +
+    scale_fill_continuous_divergingx(
+      palette = "Geyser",
+      mid = 0,
+      name = str_c("Change in probability of death for \n", disease)
+    ) +
+    theme_void() +
+    theme(
+      legend.direction = "horizontal",
+      legend.position = c(0.3, 0.32),
+      legend.key.width = unit(9, units = "pt"),
+      legend.key.height = unit(3, units = "pt"),
+      legend.text = element_text(size = 3),
+      legend.title = element_text(
+        size = 3,
+        face = "bold"
+      )
+    ) +
+    guides(
+      fill = guide_colorbar(
+        title.position = "bottom",
+        title.hjust = 0
+      )
+    )
+
+  grid <- plot_grid(map, map_change)
+
+  grid <- ggdraw(grid) +
+    draw_plot(p, -0.35, -0.15, scale = 0.11)
 
   save_plot(
     here(
@@ -214,7 +242,7 @@ for (disease in cause_list) {
 ## pair plots
 
 Pair plot of 80q0 in 2019
-```{r 80q0 correlation plot in 2019}
+```{r 80q0 correlation plot}
 p <- median_q |>
   filter(year == 2019) |>
   pivot_wider(
@@ -223,17 +251,73 @@ p <- median_q |>
     values_from = `80q0`
   ) |>
   select(all_of(cause_list)) |>
-  ggcorr(size = 0)
-
-p <- p + geom_text(
-  data = tibble(x = seq(cause_list), y = seq(cause_list), lbs = cause_list),
-  aes(x, y, label = str_wrap(lbs, 15)),
-  nudge_x = -0.5,
-  hjust = 0,
-  size = 1.5
-) +
+  select(-`All cancers`) |>
+  ggcorr(size = 0) +
+  geom_text(
+    data = tibble(x = seq(cause_list), y = seq(cause_list), lbs = cause_list),
+    aes(x, y, label = str_wrap(lbs, 12)),
+    nudge_x = -0.5,
+    hjust = 0,
+    size = 1.5
+  ) +
+  scale_fill_continuous_divergingx(
+    palette = "BrBG",
+    rev = TRUE,
+    mid = 0,
+    limits = c(-1, 1),
+    name = "Correlation"
+  ) +
+  guides(
+    fill = guide_colorbar(
+      title.position = "bottom",
+      title.hjust = 0
+    )
+  ) +
+  labs(caption = "Probability of death in 2019") +
   theme_thesis() +
-  theme(axis.line = element_blank())
+  theme(
+    axis.line = element_blank(),
+    legend.direction = "horizontal",
+    legend.key.width = unit(15, units = "pt"),
+    legend.key.height = unit(5, units = "pt"),
+    legend.text = element_text(size = 5),
+    legend.title = element_text(
+      size = 5,
+      face = "bold"
+    )
+  )
+
+p_change <- median_q_change |>
+  pivot_wider(
+    id_cols = c(LAD),
+    names_from = cause,
+    values_from = `d80q0`
+  ) |>
+  select(all_of(cause_list)) |>
+  select(-`All cancers`) |>
+  ggcorr(size = 0) +
+  geom_text(
+    data = tibble(x = seq(cause_list), y = seq(cause_list), lbs = cause_list),
+    aes(x, y, label = str_wrap(lbs, 12)),
+    nudge_x = -0.5,
+    hjust = 0,
+    size = 1.5
+  ) +
+  scale_fill_continuous_divergingx(
+    palette = "BrBG",
+    rev = TRUE,
+    mid = 0,
+    limits = c(-1, 1),
+  ) +
+  labs(caption = "Change in probability of death in 2002-19") +
+  theme_thesis() +
+  theme(
+    axis.line = element_blank(),
+    legend.position = "none"
+  )
+
+grid <- plot_grid(p + theme(legend.position = "none"), p_change)
+grid <- plot_grid(grid, get_legend(p), ncol = 1, rel_heights = c(1, .1))
 
 save_plot(
   here(
@@ -242,112 +326,8 @@ save_plot(
     "figures",
     str_c(args$sex, "_correlation", ".pdf")
   ),
-  p
+  grid
 )
-```
-
-```{r d80q0 correlation plot in 2019}
-p <- median_q_change |>
-  pivot_wider(
-    id_cols = c(LAD),
-    names_from = cause,
-    values_from = `d80q0`
-  ) |>
-  select(all_of(cause_list)) |>
-  ggcorr(size = 0)
-
-p <- p + geom_text(
-  data = tibble(x = seq(cause_list), y = seq(cause_list), lbs = cause_list),
-  aes(x, y, label = str_wrap(lbs, 15)),
-  nudge_x = -0.5,
-  hjust = 0,
-  size = 1.5
-) +
-  theme_thesis() +
-  theme(axis.line = element_blank())
-
-save_plot(
-  here(
-    "thesis_analysis",
-    "cancers",
-    "figures",
-    str_c(args$sex, "_correlation_change", ".pdf")
-  ),
-  p
-)
-```
-
-```{r 80q0 pair plot in 2019}
-# p <- median_q |>
-#   filter(year == 2019) |>
-#   pivot_wider(
-#     id_cols = c(LAD),
-#     names_from = cause,
-#     values_from = `80q0`
-#   ) |>
-#   select(all_of(cause_list)) |>
-#   ggpairs(
-#     lower = list(continuous = "blank"),
-#     upper = list(continuous = wrap("points", alpha = 0.3, size = 0.1)),
-#     diag = list(continuous = "blankDiag"),
-#     labeller = label_wrap_gen(20),
-#   ) +
-#   theme_thesis()
-
-# save_plot(
-#   here(
-#     "thesis_analysis",
-#     "cancers",
-#     "figures",
-#     str_c(args$sex, "_pairs"".pdf")
-#   ),
-#   p
-# )
-```
-
-## time series
-
-```{r plot time series}
-for (disease in cause_list) {
-  print(disease)
-  p <- median_q |>
-    filter(cause == disease) |>
-    mutate(LAD2020 = LAD) |>
-    left_join(lookup) |>
-    ggplot(
-      aes(
-        x = year,
-        y = `80q0`,
-        group = LAD
-      )
-    ) +
-    geom_line(size = 0.1) +
-    facet_wrap(
-      ~ factor(GOR2011NM, levels = regions),
-      labeller = label_wrap_gen(20)
-    ) +
-    scale_x_continuous(breaks = scales::breaks_width(2)) +
-    labs(
-      x = "",
-      y = "Probability of death",
-      caption = disease
-    ) +
-    theme_thesis() +
-    theme(
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank()
-    )
-
-  save_plot(
-    here(
-      "thesis_analysis",
-      "cancers",
-      "figures",
-      str_c(args$sex, "_series_", str_replace_all(disease, " ", "_"), ".pdf")
-    ),
-    p
-  )
-}
 ```
 
 ## poverty
@@ -368,7 +348,7 @@ p <- median_q |>
   geom_point(size = 0.1) +
   facet_wrap(
     ~ factor(cause, levels = cause_list),
-    scales = "free",
+    scales = "free_y",
     labeller = label_wrap_gen(20)
   ) +
   labs(
@@ -397,55 +377,6 @@ save_plot(
   ),
   p
 )
-```
-
-```{r plot IMD region}
-for (disease in cause_list) {
-  print(disease)
-  p <- median_q |>
-    filter(year == 2019) |>
-    filter(cause == disease) |>
-    mutate(LAD2020 = LAD) |>
-    left_join(imd |> select(LAD2020, `income rank`)) |>
-    left_join(lookup) |>
-    ggplot(
-      aes(
-        x = `income rank`,
-        y = `80q0`
-      )
-    ) +
-    geom_point(size = 0.1) +
-    facet_wrap(
-      ~ factor(GOR2011NM, levels = regions),
-      labeller = label_wrap_gen(20)
-    ) +
-    labs(
-      x = "Income deprivation rank",
-      y = "Probability of death in 2019"
-    ) +
-    scale_colour_manual(values = region_col, name = "") +
-    scale_x_continuous(
-      breaks = c(n_lad / 7, 6 * n_lad / 7),
-      labels = c("Least deprived", "Most deprived")
-    ) +
-    theme_thesis() +
-    theme(
-      legend.key.size = unit(0.01, "npc"),
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
-      axis.ticks.x = element_blank()
-    )
-
-  save_plot(
-    here(
-      "thesis_analysis",
-      "cancers",
-      "figures",
-      str_c(args$sex, "_IMD_", str_replace_all(disease, " ", "_"), ".pdf")
-    ),
-    p
-  )
-}
 ```
 
 ## distribution
@@ -479,11 +410,11 @@ p <- quantile_q |>
     labeller = label_wrap_gen(20)
   ) +
   labs(
-    x = "Ranking of median 80q0 across districts",
+    x = "Ranking of median probability across districts",
     y = "Probability of death"
   ) +
   scale_colour_manual(
-    values = c("Grey50", "Grey10"),
+    values = c("Grey60", "Grey10"),
     name = ""
   ) +
   theme_thesis() +
