@@ -254,7 +254,7 @@ p <- median_q |>
   select(-`All cancers`) |>
   ggcorr(size = 0) +
   geom_text(
-    data = tibble(x = seq(cause_list), y = seq(cause_list), lbs = cause_list),
+    data = tibble(x = seq(cause_list[-12]), y = seq(cause_list[-12]), lbs = cause_list[-12]),
     aes(x, y, label = str_wrap(lbs, 12)),
     nudge_x = -0.5,
     hjust = 0,
@@ -269,7 +269,7 @@ p <- median_q |>
   ) +
   guides(
     fill = guide_colorbar(
-      title.position = "bottom",
+      title.position = "top",
       title.hjust = 0
     )
   ) +
@@ -297,7 +297,7 @@ p_change <- median_q_change |>
   select(-`All cancers`) |>
   ggcorr(size = 0) +
   geom_text(
-    data = tibble(x = seq(cause_list), y = seq(cause_list), lbs = cause_list),
+    data = tibble(x = seq(cause_list[-12]), y = seq(cause_list[-12]), lbs = cause_list[-12]),
     aes(x, y, label = str_wrap(lbs, 12)),
     nudge_x = -0.5,
     hjust = 0,
@@ -317,7 +317,7 @@ p_change <- median_q_change |>
   )
 
 grid <- plot_grid(p + theme(legend.position = "none"), p_change)
-grid <- plot_grid(grid, get_legend(p), ncol = 1, rel_heights = c(1, .1))
+grid <- plot_grid(get_legend(p), grid, ncol = 1, rel_heights = c(.1, 1))
 
 save_plot(
   here(
@@ -377,6 +377,44 @@ save_plot(
   ),
   p
 )
+```
+
+Correlation of each cancer with poverty:
+
+```{r}
+median_q |>
+  filter(year == 2019) |>
+  mutate(LAD2020 = LAD) |>
+  left_join(imd |> select(LAD2020, `income rank`)) |>
+  group_by(cause) |>
+  summarise(correlation = cor(`80q0`, `income rank`))
+```
+
+```{r}
+median_q |>
+  filter(year == 2019) |>
+  mutate(LAD2020 = LAD) |>
+  left_join(imd |> select(LAD2020, `income rank`)) |>
+  group_by(cause) |>
+  summarise(correlation = cor(`80q0`, `income rank`))
+```
+
+```{r}
+apply(
+  X = cause_q["2019", , , ],
+  MARGIN = c(2, 3),
+  FUN = cor,
+  imd$`income rank`
+) |>
+  apply(
+    MARGIN = 2,
+    FUN = quantile,
+    p = c(0.025, 0.5, 0.975)
+  ) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  rename(quantile = Var1, correlation = Freq) |>
+  arrange() |>
+  pivot_wider(names_from = quantile, values_from = correlation)
 ```
 
 ## distribution
