@@ -390,25 +390,6 @@ median_q |>
   summarise(correlation = cor(`80q0`, `income rank`, method = "spearman"))
 ```
 
-```{r}
-apply(
-  X = cause_q["2019", , , ],
-  MARGIN = c(2, 3),
-  FUN = cor,
-  imd$`income rank`,
-  method = "spearman"
-) |>
-  apply(
-    MARGIN = 2,
-    FUN = quantile,
-    p = c(0.025, 0.5, 0.975)
-  ) |>
-  as.data.frame.table(stringsAsFactors = FALSE) |>
-  rename(quantile = Var1, correlation = Freq) |>
-  arrange() |>
-  pivot_wider(names_from = quantile, values_from = correlation)
-```
-
 ## distribution
 
 ```{r calculate quantiles 80q0 in 2002 and 2019}
@@ -421,24 +402,10 @@ quantile_q <- apply(
   as.data.frame.table(stringsAsFactors = FALSE) |>
   as_tibble() |>
   rename(quantile = Var1, `80q0` = Freq) |>
-  mutate(LAD2020 = LAD) |>
-  left_join(lookup) |>
-  left_join(
-    lookup |>
-      mutate(GOR2011NM = factor(GOR2011NM, levels = regions)) |>
-      group_by(GOR2011, GOR2011NM) |>
-      summarise(n_lads = n()) |>
-      ungroup() |>
-      arrange(GOR2011NM) |>
-      mutate(csum_lads = cumsum(n_lads) - n_lads) |>
-      select(-GOR2011NM)
-  ) |>
   arrange() |>
   pivot_wider(names_from = quantile, values_from = `80q0`) |>
-  group_by(year, cause, GOR2011) |>
-  mutate(rank = rank(`50%`)) |>
-  ungroup() |>
-  mutate(rank = rank + csum_lads)
+  group_by(year, cause) |>
+  mutate(rank = rank(`50%`))
 ```
 
 ```{r distribution plot}
@@ -476,49 +443,6 @@ save_plot(
     "cancers",
     "figures",
     str_c(args$sex, "_distribution", ".pdf")
-  ),
-  p
-)
-```
-
-```{r distribution plot}
-p <- quantile_q |>
-  filter(cause == "All cancers") |>
-  ggplot(
-    aes(
-      x = rank,
-      colour = factor(GOR2011NM, levels = regions),
-      alpha = year
-    )
-  ) +
-  geom_segment(
-    aes(
-      xend = rank,
-      y = `2.5%`,
-      yend = `97.5%`
-    )
-  ) +
-  geom_point(aes(y = `50%`), size = 0.1) +
-  labs(
-    x = "Ranking of median probability across districts",
-    y = "Probability of death"
-  ) +
-  scale_colour_manual(values = region_col, name = "") +
-  theme_thesis() +
-  theme(
-    legend.position = "top",
-    axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
-  )
-
-save_plot(
-  here(
-    "thesis_analysis",
-    "cancers",
-    "figures",
-    str_c(args$sex, "_distribution1", ".pdf")
   ),
   p
 )
