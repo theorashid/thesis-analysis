@@ -27,7 +27,7 @@ source(here("thesis_analysis", "theme_thesis.R"))
 ## data
 
 ```{r data}
-args <- lst(region = "LAD", sex = "male", model = "car_as_at")
+args <- lst(region = "LAD", sex = "female", model = "car_as_at")
 
 cause_q <- read_rds(
   here(
@@ -153,7 +153,10 @@ for (disease in cause_list) {
   print(disease)
   map <- shape |>
     left_join(
-      median_q |> filter(cause == disease) |> mutate(LAD2020 = LAD)
+      median_q |>
+        filter(year == 2019) |>
+        filter(cause == disease) |>
+        mutate(LAD2020 = LAD)
     ) |>
     ggplot(aes(fill = `80q0`)) +
     geom_sf(colour = "white", size = 0.1) +
@@ -165,6 +168,7 @@ for (disease in cause_list) {
     theme(legend.position = "none")
 
   p <- median_q |>
+    filter(year == 2019) |>
     filter(cause == disease) |>
     ggplot(aes(x = `80q0`, y = 1, fill = after_stat(x))) +
     geom_density_ridges_gradient(colour = "#cccccc", size = 0.1) +
@@ -381,7 +385,7 @@ save_plot(
 
 Correlation of each cancer with poverty:
 
-```{r}
+```{r correlation with poverty}
 median_q |>
   filter(year == 2019) |>
   mutate(LAD2020 = LAD) |>
@@ -405,7 +409,19 @@ quantile_q <- apply(
   arrange() |>
   pivot_wider(names_from = quantile, values_from = `80q0`) |>
   group_by(year, cause) |>
-  mutate(rank = rank(`50%`))
+  mutate(rank = rank(`50%`)) |>
+  ungroup()
+```
+
+Range of probability of death:
+```{r probability of death range}
+quantile_q |>
+  mutate(LAD2020 = LAD) |>
+  left_join(lookup) |>
+  filter(year == 2019) |>
+  filter(cause == "All cancers") |>
+  arrange(-`50%`) |>
+  select(-c(LAD, LAD2020, GOR2011, cause))
 ```
 
 ```{r distribution plot}
