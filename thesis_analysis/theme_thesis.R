@@ -26,15 +26,15 @@ theme_thesis <- function(base_size = 5,
   ret <- ret + theme(legend.key = element_blank())
   ret <- ret + theme(legend.text = element_text(size = legend_text_size, face = legend_text_face))
 
-  ret <- ret + theme(panel.grid = element_line(color = grid_col, size = 0.2))
-  ret <- ret + theme(panel.grid.major = element_line(color = grid_col, size = 0.2))
-  ret <- ret + theme(panel.grid.minor = element_line(color = grid_col, size = 0.15))
+  ret <- ret + theme(panel.grid = element_line(color = grid_col, linewidth = 0.2))
+  ret <- ret + theme(panel.grid.major = element_line(color = grid_col, linewidth = 0.2))
+  ret <- ret + theme(panel.grid.minor = element_line(color = grid_col, linewidth = 0.15))
 
-  ret <- ret + theme(axis.line = element_line(color = "#2b2b2b", size = 0.15))
+  ret <- ret + theme(axis.line = element_line(color = "#2b2b2b", linewidth = 0.15))
 
-  ret <- ret + theme(axis.ticks = element_line(size = 0.15))
-  ret <- ret + theme(axis.ticks.x = element_line(size = 0.15))
-  ret <- ret + theme(axis.ticks.y = element_line(size = 0.15))
+  ret <- ret + theme(axis.ticks = element_line(linewidth = 0.15))
+  ret <- ret + theme(axis.ticks.x = element_line(linewidth = 0.15))
+  ret <- ret + theme(axis.ticks.y = element_line(linewidth = 0.15))
   ret <- ret + theme(axis.ticks.length = grid::unit(5, "pt"))
 
   xj <- switch(tolower(substr(axis_title_just, 1, 1)),
