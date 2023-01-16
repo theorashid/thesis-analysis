@@ -98,7 +98,13 @@ median_e0_changes <- apply(
   as_tibble() |>
   rename(de0 = Freq, year = Var1, sex = Var2, MSOA2011 = Var3) |>
   mutate(
-    period = recode(year, `2006` = "2002-2006", `2010` = "2006-2010", `2014` = "2010-2014", `2019` = "2014-2019")
+    period = recode(
+      year,
+      `2006` = "2002-2006",
+      `2010` = "2006-2010",
+      `2014` = "2010-2014",
+      `2019` = "2014-2019"
+    )
   ) |>
   left_join(
     median_e0 |>
@@ -107,7 +113,13 @@ median_e0_changes <- apply(
       mutate(percentile = ntile(e0, 100) / 100) |>
       ungroup() |>
       mutate(
-        period = recode(year, `2002` = "2002-2006", `2006` = "2006-2010", `2010` = "2010-2014", `2014` = "2014-2019")
+        period = recode(
+          year,
+          `2006` = "2002-2006",
+          `2010` = "2006-2010",
+          `2014` = "2010-2014",
+          `2019` = "2014-2019"
+        )
       ) |>
       select(-e0, -year)
   )
