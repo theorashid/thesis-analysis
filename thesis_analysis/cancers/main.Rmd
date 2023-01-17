@@ -223,7 +223,7 @@ for (disease in cause_list) {
       median_q_change |> filter(cause == disease) |> mutate(LAD2020 = LAD)
     ) |>
     ggplot(aes(fill = `d80q0`)) +
-    geom_sf(colour = "white", linewidth = 0.1) +
+    geom_sf(colour = "white", linewidth = 0.01) +
     scale_fill_continuous_divergingx(
       palette = "Geyser",
       mid = 0,
