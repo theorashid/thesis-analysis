@@ -145,6 +145,28 @@ median_q_change <- apply(
   rename(d80q0 = Freq)
 ```
 
+```{r calculate median 80q0 relative change 2002-2019}
+median_q_rel_change <- apply(
+  X = (cause_q["2019", , , ] - cause_q["2002", , , ]) * 100 / cause_q["2002", , , ],
+  MARGIN = c(1, 3),
+  FUN = quantile,
+  p = c(0.025, 0.5, 0.975)
+) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(quantile = Var1, `rel_change` = Freq) |>
+  arrange() |>
+  pivot_wider(names_from = quantile, values_from = `rel_change`)
+```
+
+Relative changes:
+
+```{r percentage relative changes}
+median_q_rel_change |>
+  filter(cause == "All cancers") |>
+  arrange(-`50%`)
+```
+
 ## maps
 
 Maps of 80q0 in 2019 and d80q0 2002-19.
