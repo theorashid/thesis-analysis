@@ -135,17 +135,6 @@ median_q <- apply(
   arrange()
 ```
 
-```{r calculate median 80q0 change 2002-2019}
-median_q_change <- apply(
-  X = cause_q["2019", , , ] - cause_q["2002", , , ],
-  MARGIN = c(1, 3),
-  FUN = median
-) |>
-  as.data.frame.table(stringsAsFactors = FALSE) |>
-  as_tibble() |>
-  rename(d80q0 = Freq)
-```
-
 ```{r calculate median 80q0 relative change 2002-2019}
 median_q_rel_change <- apply(
   X = (cause_q["2019", , , ] - cause_q["2002", , , ]) / cause_q["2002", , , ],
@@ -204,7 +193,7 @@ for (disease in cause_list) {
     geom_density_ridges_gradient(colour = "#cccccc", size = 0.1) +
     scale_fill_continuous_sequential(
       palette = "Reds",
-      name = str_c("Probability of death for \n", disease),
+      name = str_c("Probability of dying for \n", disease),
       n.breaks = 5
     ) +
     scale_y_continuous(expand = c(0, 0)) +
@@ -345,7 +334,7 @@ p <- median_q |>
       title.hjust = 0
     )
   ) +
-  labs(caption = "Probability of death in 2019") +
+  labs(caption = "Probability of dying between birth and 80 in 2019") +
   theme_thesis() +
   theme(
     axis.line = element_blank(),
@@ -381,7 +370,7 @@ p_change <- median_q_rel_change |>
     mid = 0,
     limits = c(-1, 1),
   ) +
-  labs(caption = "Change in probability of death in 2002-19") +
+  labs(caption = "Change in probability of death from 2002 to 2019") +
   theme_thesis() +
   theme(
     axis.line = element_blank(),
@@ -425,7 +414,7 @@ p <- median_q |>
   ) +
   labs(
     x = "Income deprivation rank",
-    y = "Probability of death in 2019"
+    y = "Probability of dying between birth and 80 in 2019"
   ) +
   scale_colour_manual(values = region_col, name = "") +
   scale_x_continuous(
@@ -505,8 +494,8 @@ p <- quantile_q |>
     labeller = label_wrap_gen(20)
   ) +
   labs(
-    x = "Ranking of median probability across districts",
-    y = "Probability of death"
+    x = "Ranking of probability of death",
+    y = "Probability of dying between birth and 80"
   ) +
   scale_colour_manual(
     values = c("Grey60", "Grey10"),
