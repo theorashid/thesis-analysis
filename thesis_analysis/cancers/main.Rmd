@@ -481,6 +481,19 @@ quantile_q |>
   select(-c(LAD, LAD2020, GOR2011, cause))
 ```
 
+Inequality of probability of death:
+```{r inequality probability of death}
+quantile_q |>
+  mutate(LAD2020 = LAD) |>
+  left_join(lookup) |>
+  filter(year == 2019) |>
+  group_by(cause) |>
+  summarise(
+    max_min = max(`50%`) / min(`50%`),
+    q90_q10 = quantile(`50%`, 0.9) / quantile(`50%`, 0.1)
+  )
+```
+
 ```{r distribution plot}
 p <- quantile_q |>
   ggplot(aes(x = rank, colour = year)) +
