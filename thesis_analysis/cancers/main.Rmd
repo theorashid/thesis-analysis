@@ -131,6 +131,43 @@ region_col <- c(
 )
 ```
 
+```{r treemap data}
+bind_rows(
+  tribble(
+    ~cause, ~deaths,
+    "Trachea bronchus lung cancers", 218561,
+    "Breast cancer", 177528,
+    "Colon and rectum cancers", 111364,
+    "Pancreas cancer", 62379,
+    "Ovary cancer", 62338,
+    "Lymphomas multiple myeloma", 54046,
+    "Oesophagus cancer", 36806,
+    "Leukaemia", 29465,
+    "Corpus uteri cancer", 29000,
+    "Stomach cancer", 26818,
+    "All other cancers", 359262,
+  ) |>
+    mutate(sex = "female"),
+  tribble(
+    ~cause, ~deaths,
+    "Trachea bronchus lung cancers", 282422,
+    "Prostate cancer", 164871,
+    "Colon and rectum cancers", 129382,
+    "Oesophagus cancer", 75457,
+    "Lymphomas multiple myeloma", 64734,
+    "Pancreas cancer", 61558,
+    "Bladder cancer", 51883,
+    "Stomach cancer", 45852,
+    "Leukaemia", 39368,
+    "Liver cancer", 36257,
+    "All other cancers", 333822,
+  ) |>
+    mutate(sex = "male")
+) |>
+  group_by(sex) |>
+  mutate(prop = deaths / sum(deaths))
+```
+
 ```{r calculate median 80q0 in over time}
 median_q <- lst()
 for (s in c("male", "female")) {
@@ -179,6 +216,8 @@ apply(
   filter(cause == "All cancers") |>
   arrange(-`50%`)
 ```
+
+## treemap
 
 ## maps
 
