@@ -238,7 +238,11 @@ p <- tm_df |>
     fontsize.labels = 18,
     fontsize.title = 0,
     position.legend = "none",
-    bg.labels = 0
+    bg.labels = 0,
+    align.labels = list(
+      c("left", "top"),
+      c("right", "bottom")
+    ),
   )
 
 quartz.save(
