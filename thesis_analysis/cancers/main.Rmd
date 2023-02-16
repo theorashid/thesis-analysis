@@ -21,6 +21,7 @@ library(geojsonsf)
 library(sf)
 library(ggridges)
 library(GGally)
+library(treemap)
 
 source(here("thesis_analysis", "theme_thesis.R"))
 ```
@@ -132,40 +133,40 @@ region_col <- c(
 ```
 
 ```{r treemap data}
-bind_rows(
+tm_df <- bind_rows(
   tribble(
-    ~cause, ~deaths,
-    "Trachea bronchus lung cancers", 218561,
-    "Breast cancer", 177528,
-    "Colon and rectum cancers", 111364,
-    "Pancreas cancer", 62379,
-    "Ovary cancer", 62338,
-    "Lymphomas multiple myeloma", 54046,
-    "Oesophagus cancer", 36806,
-    "Leukaemia", 29465,
-    "Corpus uteri cancer", 29000,
-    "Stomach cancer", 26818,
-    "All other cancers", 359262,
+    ~cause, ~cause_lab, ~deaths,
+    "Trachea bronchus lung cancers", "Trachea, bronchus and lung cancers", 218561,
+    "Breast cancer", "Breast", 177528,
+    "Colon and rectum cancers", "Colon and rectum", 111364,
+    "Pancreas cancer", "Pancreas", 62379,
+    "Ovary cancer", "Ovary", 62338,
+    "Lymphomas multiple myeloma", "Lymphomas multiple myeloma", 54046,
+    "Oesophagus cancer", "Oesophagus", 36806,
+    "Leukaemia", "Leukaemia", 29465,
+    "Corpus uteri cancer", "Corpus uteri", 29000,
+    "Stomach cancer", "Stomach", 26818,
+    "All other cancers", "All other cancers", 359262,
   ) |>
-    mutate(sex = "female"),
+    mutate(sex = "Women"),
   tribble(
-    ~cause, ~deaths,
-    "Trachea bronchus lung cancers", 282422,
-    "Prostate cancer", 164871,
-    "Colon and rectum cancers", 129382,
-    "Oesophagus cancer", 75457,
-    "Lymphomas multiple myeloma", 64734,
-    "Pancreas cancer", 61558,
-    "Bladder cancer", 51883,
-    "Stomach cancer", 45852,
-    "Leukaemia", 39368,
-    "Liver cancer", 36257,
-    "All other cancers", 333822,
+    ~cause, ~cause_lab, ~deaths,
+    "Trachea bronchus lung cancers", "Trachea, bronchus and lung cancers", 282422,
+    "Prostate cancer", "Prostate", 164871,
+    "Colon and rectum cancers", "Colon and rectum", 129382,
+    "Oesophagus cancer", "Oesophagus", 75457,
+    "Lymphomas multiple myeloma", "Lymphomas multiple myeloma", 64734,
+    "Pancreas cancer", "Pancreas", 61558,
+    "Bladder cancer", "Bladder", 51883,
+    "Stomach cancer", "Stomach", 45852,
+    "Leukaemia", "Leukaemia", 39368,
+    "Liver cancer", "Liver", 36257,
+    "All other cancers", "All other cancers", 333822,
   ) |>
-    mutate(sex = "male")
+    mutate(sex = "Men")
 ) |>
   group_by(sex) |>
-  mutate(prop = deaths / sum(deaths))
+  mutate(prop = deaths * 100 / sum(deaths))
 ```
 
 ```{r calculate median 80q0 in over time}
@@ -218,6 +219,38 @@ apply(
 ```
 
 ## treemap
+
+```{r tree map}
+p <- tm_df |>
+  mutate(
+    lab = str_c(
+      cause_lab,
+      "\n",
+      format(deaths, big.mark = ",")
+    )
+  ) |>
+  treemap(
+    index = c("sex", "lab"),
+    type = "categorical",
+    vSize = "deaths",
+    vColor = "sex",
+    palette = "Greys",
+    fontsize.labels = 18,
+    fontsize.title = 0,
+    position.legend = "none",
+    bg.labels = 0
+  )
+
+quartz.save(
+  here(
+    "thesis_analysis",
+    "cancers",
+    "figures",
+    "treemap.pdf"
+  ),
+  type = "pdf"
+)
+```
 
 ## maps
 
