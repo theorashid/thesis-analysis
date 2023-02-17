@@ -649,8 +649,49 @@ for (s in c("female", "male")) {
     here(
       "thesis_analysis",
       "cancers",
-      # "figures",
+      "figures",
       str_c(s, "_distribution", ".pdf")
+    ),
+    p
+  )
+}
+```
+
+# Change against starting 80q0
+
+```{r distribution plot}
+for (s in c("female", "male")) {
+  p <- median_q |>
+    pluck(s) |>
+    filter(year == 2002) |>
+    left_join(median_q_rel_change |> pluck(s)) |>
+    mutate(LAD2020 = LAD) |>
+    left_join(lookup) |>
+    ggplot(aes(x = `80q0`, y = d80q0, colour = factor(GOR2011NM, levels = regions))) +
+    geom_point(size = 0.1) +
+    facet_wrap(
+      ~ factor(cause,
+        levels = cause_list[[s]]
+      ),
+      scales = "free",
+      labeller = label_wrap_gen(20)
+    ) +
+    labs(
+      x = "Probability of dying between birth and 80 in 2002",
+      y = "Relative change in probability of dying from 2002 to 2019"
+    ) +
+    scale_colour_manual(values = region_col, name = "") +
+    scale_x_continuous(n.breaks = 4) +
+    scale_y_continuous(labels = percent) +
+    theme_thesis() +
+    theme(legend.key.size = unit(0.01, "npc"))
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "cancers",
+      "figures",
+      str_c(s, "_level_2002_change", ".pdf")
     ),
     p
   )
