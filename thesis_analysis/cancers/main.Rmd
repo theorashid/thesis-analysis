@@ -395,7 +395,7 @@ for (s in c("female", "male")) {
       here(
         "thesis_analysis",
         "cancers",
-        # "figures",
+        "figures",
         str_c(s, "_map_", str_replace_all(disease, " ", "_"), ".pdf")
       ),
       grid
