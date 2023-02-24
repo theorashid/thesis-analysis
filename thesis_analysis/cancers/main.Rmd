@@ -136,12 +136,12 @@ region_col <- c(
 tm_df <- bind_rows(
   tribble(
     ~cause, ~cause_lab, ~deaths,
-    "Trachea bronchus lung cancers", "Trachea, bronchus and lung cancers", 218561,
+    "Trachea bronchus lung cancers", "Trachea, bronchus\n and lung cancers", 218561,
     "Breast cancer", "Breast", 177528,
     "Colon and rectum cancers", "Colon and rectum", 111364,
     "Pancreas cancer", "Pancreas", 62379,
     "Ovary cancer", "Ovary", 62338,
-    "Lymphomas multiple myeloma", "Lymphomas multiple myeloma", 54046,
+    "Lymphomas multiple myeloma", "Lymphomas\n multiple myeloma", 54046,
     "Oesophagus cancer", "Oesophagus", 36806,
     "Leukaemia", "Leukaemia", 29465,
     "Corpus uteri cancer", "Corpus uteri", 29000,
@@ -151,11 +151,11 @@ tm_df <- bind_rows(
     mutate(sex = "Women"),
   tribble(
     ~cause, ~cause_lab, ~deaths,
-    "Trachea bronchus lung cancers", "Trachea, bronchus and lung cancers", 282422,
+    "Trachea bronchus lung cancers", "Trachea, bronchus\n and lung cancers", 282422,
     "Prostate cancer", "Prostate", 164871,
     "Colon and rectum cancers", "Colon and rectum", 129382,
     "Oesophagus cancer", "Oesophagus", 75457,
-    "Lymphomas multiple myeloma", "Lymphomas multiple myeloma", 64734,
+    "Lymphomas multiple myeloma", "Lymphomas\n multiple myeloma", 64734,
     "Pancreas cancer", "Pancreas", 61558,
     "Bladder cancer", "Bladder", 51883,
     "Stomach cancer", "Stomach", 45852,
