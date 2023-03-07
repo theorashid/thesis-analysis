@@ -1,0 +1,210 @@
+---
+title: "eda"
+author: "Theo Rashid"
+date: "07/03/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## cause rates
+
+```{r imports}
+library(here)
+library(tidyverse)
+library(cowplot)
+library(colorspace)
+library(scales)
+library(geojsonsf)
+library(sf)
+library(ggridges)
+
+source(here("thesis_analysis", "theme_thesis.R"))
+```
+
+## data
+
+```{r data}
+shape <- geojson_sf(here("data", "covariates", "LAD2020_ENG_BGC.geojson"))
+
+lookup <- read_csv(
+  here(
+    "data",
+    "covariates",
+    "LSOA_MSOA_LAD_GOR_CTRY_lookup.csv"
+  )
+) |>
+  select(LAD2020, LAD2020NM, GOR2011, GOR2011NM) |>
+  distinct() |>
+  arrange(LAD2020)
+
+n_lad <- length(unique(lookup$LAD2020NM))
+```
+
+## map of district-level life expectancy
+
+Maps of life expectancy from all deaths 2002-19.
+```{r map e0}
+e0_LAD <- read_csv(here("data", "eda", "e0_eng_LAD.csv"))
+
+map_skeleton <- list(
+  geom_sf(colour = "white", linewidth = 0.01),
+  scale_fill_continuous_sequential(
+    palette = "Reds",
+    rev = FALSE,
+    name = ""
+  ),
+  theme_void(),
+  theme(legend.position = "none")
+)
+
+ridge_skeleton <- list(
+  geom_density_ridges_gradient(colour = "#cccccc", size = 0.1),
+  scale_y_continuous(expand = c(0, 0)),
+  theme_void(),
+  theme(
+    legend.direction = "horizontal",
+    legend.position = "bottom",
+    legend.key.width = unit(9, units = "pt"),
+    legend.key.height = unit(3, units = "pt"),
+    legend.text = element_text(size = 3),
+    legend.title = element_text(
+      size = 3,
+      face = "bold"
+    )
+  ),
+  guides(
+    fill = guide_colorbar(
+      title.position = "bottom",
+      title.hjust = 0
+    )
+  )
+)
+
+p <- e0_LAD |>
+  filter(sex == 1) |>
+  ggplot(aes(x = `ex`, y = 1, fill = after_stat(x))) +
+  ridge_skeleton
+
+grid <- plot_grid(
+  shape |>
+    left_join(e0_LAD |> filter(sex == 2)) |>
+    ggplot(aes(fill = `ex`)) +
+    map_skeleton,
+  shape |>
+    left_join(e0_LAD |> filter(sex == 1)) |>
+    ggplot(aes(fill = `ex`)) +
+    map_skeleton
+)
+
+p_female <- e0_LAD |>
+  filter(sex == 2) |>
+  ggplot(aes(x = `ex`, y = 1, fill = after_stat(x))) +
+  ridge_skeleton +
+  scale_fill_continuous_sequential(
+    palette = "Reds",
+    rev = FALSE,
+    name = str_c("Life expectancy, women"),
+    n.breaks = 5
+  )
+
+p_male <- e0_LAD |>
+  filter(sex == 1) |>
+  ggplot(aes(x = `ex`, y = 1, fill = after_stat(x))) +
+  ridge_skeleton +
+  scale_fill_continuous_sequential(
+    palette = "Reds",
+    rev = FALSE,
+    name = str_c("Life expectancy, men"),
+    n.breaks = 5
+  )
+
+grid <- ggdraw(grid) +
+  draw_plot(p_female, -0.35, -0.15, scale = 0.11) +
+  draw_plot(p_male, 0.15, -0.15, scale = 0.11)
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "eda",
+    "figures",
+    str_c("e0_map_LAD_2002_2019.pdf")
+  ),
+  grid
+)
+```
+
+## age-specific death rates
+
+Age-specific death rates for England 2002-19
+```{r 80q0 correlation plot}
+mx <- read_csv(here("data", "eda", "deaths_eng_age_time.csv")) |>
+  mutate(sex = recode(sex, `1` = "men", `2` = "women"))
+
+p <- mx |>
+  group_by(sex, age_group) |>
+  summarise(death_rate = sum(deaths) / sum(population)) |>
+  ggplot(aes(x = age_group, y = death_rate, group = sex, colour = sex)) +
+  geom_line() +
+  scale_x_continuous(expand = c(0, NA), breaks = breaks_pretty(10)) +
+  scale_y_continuous(trans = "log10") +
+  theme_thesis() +
+  labs(x = "Age group", y = "Death rate")
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "eda",
+    "figures",
+    "age_mx.pdf"
+  ),
+  p
+)
+```
+
+## age-specific death rates and life expectancy over time
+
+Age-specific death rates for England 2002-19
+```{r 80q0 correlation plot}
+mx <- read_csv(here("data", "eda", "deaths_eng_age_time.csv")) |>
+  mutate(sex = recode(sex, `1` = "men", `2` = "women"))
+
+e0 <- read_csv(here("data", "eda", "e0_eng_time.csv")) |>
+  mutate(sex = recode(sex, `1` = "men", `2` = "women"))
+
+p <- mx |>
+  mutate(
+    broad_age_group = case_when(
+      age_group < 20 ~ "0-19 years",
+      age_group >= 20 & age_group < 60 ~ "20-59 years",
+      age_group >= 60 ~ "80+ years",
+    )
+  ) |>
+  group_by(sex, YEAR, broad_age_group) |>
+  summarise(death_rate = sum(deaths) / sum(population)) |>
+  ggplot(aes(x = YEAR, y = death_rate, group = sex, colour = sex)) +
+  geom_line() +
+  facet_wrap(~broad_age_group, scales = "free_y") +
+  # scale_x_continuous(expand = c(0, NA), breaks = breaks_pretty(10)) +
+  # scale_y_continuous(trans = "log10") +
+  theme_thesis() +
+  labs(x = "year", y = "Death rate")
+
+p_e0 <- e0 |>
+  ggplot(aes(x = YEAR, y = ex, group = sex, colour = sex)) +
+  geom_line() +
+  theme_thesis() +
+  labs(x = "year", y = "Life expectancy")
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "eda",
+    "figures",
+    "age_mx_time.pdf"
+  ),
+  plot_grid(p, p_e0, ncol = 1)
+)
+```
