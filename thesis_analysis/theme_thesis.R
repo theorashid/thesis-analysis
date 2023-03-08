@@ -27,8 +27,8 @@ theme_thesis <- function(base_size = 5,
   ret <- ret + theme(legend.text = element_text(size = legend_text_size, face = legend_text_face))
 
   ret <- ret + theme(panel.grid = element_line(color = grid_col, linewidth = 0.2))
-  ret <- ret + theme(panel.grid.major = element_line(color = grid_col, linewidth = 0.2))
-  ret <- ret + theme(panel.grid.minor = element_line(color = grid_col, linewidth = 0.15))
+  ret <- ret + theme(panel.grid.major = element_blank())
+  ret <- ret + theme(panel.grid.minor = element_blank())
 
   ret <- ret + theme(axis.line = element_line(color = "#2b2b2b", linewidth = 0.15))
 
