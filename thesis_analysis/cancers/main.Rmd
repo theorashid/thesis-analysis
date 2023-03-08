@@ -226,7 +226,10 @@ p <- tm_df |>
     lab = str_c(
       cause_lab,
       "\n",
-      format(deaths, big.mark = ",")
+      format(deaths, big.mark = ","),
+      "\n(",
+      format(round(prop, 1), nsmall = 1),
+      "%)"
     )
   ) |>
   treemap(
@@ -235,7 +238,7 @@ p <- tm_df |>
     vSize = "deaths",
     vColor = "sex",
     palette = "Greys",
-    fontsize.labels = 18,
+    fontsize.labels = 16,
     fontsize.title = 0,
     position.legend = "none",
     bg.labels = 0,
