@@ -58,6 +58,56 @@ cause_q <- lst(
   )
 )
 
+cause_q_all_cancers <- lst(
+  male = read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_male_",
+        args$model,
+        "_All_cancers_80q0.rds"
+      )
+    )
+  ),
+  female = read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_female_",
+        args$model,
+        "_All_cancers_80q0.rds"
+      )
+    )
+  )
+)
+
+for (s in c("male", "female")) {
+  print(
+    cor(
+      apply(
+        X = cause_q[[s]],
+        MARGIN = c(1, 2, 4),
+        FUN = median
+      )[, , "All cancers"] |>
+        as.numeric(),
+      apply(
+        X = cause_q_all_cancers[[s]],
+        MARGIN = c(1, 2),
+        FUN = median
+      ) |>
+        as.numeric()
+    )
+  )
+
+  cause_q[[s]][, , , "All cancers"] <- cause_q_all_cancers[[s]]
+}
+```
+
+```{r covariate and shape data}
 shape <- geojson_sf(here("data", "covariates", "LAD2020_ENG_BGC.geojson"))
 
 cause_list <- lst(
@@ -169,7 +219,7 @@ tm_df <- bind_rows(
   mutate(prop = deaths * 100 / sum(deaths))
 ```
 
-```{r calculate median 80q0 in over time}
+```{r calculate median 80q0 over time}
 median_q <- lst()
 for (s in c("male", "female")) {
   median_q[[s]] <- apply(
@@ -539,8 +589,6 @@ for (s in c("female", "male")) {
     theme_thesis() +
     theme(
       legend.key.size = unit(0.01, "npc"),
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
       axis.ticks.x = element_blank()
     )
 
@@ -643,9 +691,7 @@ for (s in c("female", "male")) {
     theme(
       legend.position = "top",
       axis.text.x = element_blank(),
-      axis.ticks.x = element_blank(),
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
+      axis.ticks.x = element_blank()
     )
 
   save_plot(
@@ -681,7 +727,7 @@ for (s in c("female", "male")) {
     ) +
     labs(
       x = "Probability of dying between birth and 80 in 2002",
-      y = "Relative change in probability of dying from 2002 to 2019"
+      y = "Percent change in probability of dying from 2002 to 2019"
     ) +
     scale_colour_manual(values = region_col, name = "") +
     scale_x_continuous(n.breaks = 4) +
