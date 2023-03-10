@@ -24,6 +24,7 @@ library(GGally)
 library(treemap)
 
 source(here("thesis_analysis", "theme_thesis.R"))
+source(here("thesis_analysis", "palette_thesis.R"))
 ```
 
 ## data
@@ -167,18 +168,6 @@ regions <- c(
   "South East",
   "South West",
   "London"
-)
-
-region_col <- c(
-  "#1F78B4",
-  "#E31A1C",
-  "#FF7F00",
-  "#B15928",
-  "#A6CEE3",
-  "#33A02C",
-  "#6A3D9A",
-  "#FDBF6F",
-  "#FB9A99"
 )
 ```
 
@@ -581,7 +570,7 @@ for (s in c("female", "male")) {
       x = "Income deprivation rank",
       y = "Probability of dying between birth and 80 in 2019"
     ) +
-    scale_colour_manual(values = region_col, name = "") +
+    scale_colour_manual(values = region_pal, name = "") +
     scale_x_continuous(
       breaks = c(n_lad / 7, 6 * n_lad / 7),
       labels = c("Least deprived", "Most deprived")
@@ -729,7 +718,7 @@ for (s in c("female", "male")) {
       x = "Probability of dying between birth and 80 in 2002",
       y = "Percent change in probability of dying from 2002 to 2019"
     ) +
-    scale_colour_manual(values = region_col, name = "") +
+    scale_colour_manual(values = region_pal, name = "") +
     scale_x_continuous(n.breaks = 4) +
     scale_y_continuous(labels = percent) +
     theme_thesis() +
