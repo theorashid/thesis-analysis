@@ -331,7 +331,7 @@ for (s in c("female", "male")) {
       scale_fill_continuous_sequential(
         palette = "Reds",
         name = str_c("Probability of dying for \n", disease),
-        n.breaks = 5
+        breaks = breaks_pretty(n = 3)
       ) +
       scale_y_continuous(expand = c(0, 0)) +
       theme_void() +
@@ -405,7 +405,7 @@ for (s in c("female", "male")) {
         mid = change_mp,
         name = str_c("Change in probability for \n", disease),
         labels = percent,
-        n.breaks = 4
+        breaks = breaks_pretty(n = 3)
       ) +
       scale_y_continuous(expand = c(0, 0)) +
       theme_void() +
@@ -719,7 +719,7 @@ for (s in c("female", "male")) {
       y = "Percent change in probability of dying from 2002 to 2019"
     ) +
     scale_colour_manual(values = region_pal, name = "") +
-    scale_x_continuous(n.breaks = 4) +
+    scale_x_continuous(breaks = breaks_pretty(n = 3)) +
     scale_y_continuous(labels = percent) +
     theme_thesis() +
     theme(legend.key.size = unit(0.01, "npc"))
