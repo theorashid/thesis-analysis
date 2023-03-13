@@ -20,8 +20,10 @@ library(scales)
 library(geojsonsf)
 library(sf)
 library(ggridges)
+library(ggrepel)
 
 source(here("thesis_analysis", "theme_thesis.R"))
+source(here("thesis_analysis", "palette_thesis.R"))
 ```
 
 ## data
@@ -83,11 +85,6 @@ ridge_skeleton <- list(
   )
 )
 
-p <- e0_LAD |>
-  filter(sex == 1) |>
-  ggplot(aes(x = `ex`, y = 1, fill = after_stat(x))) +
-  ridge_skeleton
-
 grid <- plot_grid(
   shape |>
     left_join(e0_LAD |> filter(sex == 2)) |>
@@ -146,12 +143,22 @@ mx <- read_csv(here("data", "eda", "deaths_eng_age_time.csv")) |>
 p <- mx |>
   group_by(sex, age_group) |>
   summarise(death_rate = sum(deaths) / sum(population)) |>
+  mutate(label = ifelse(age_group == max(age_group), sex, NA_character_)) |>
   ggplot(aes(x = age_group, y = death_rate, group = sex, colour = sex)) +
-  geom_line() +
-  scale_x_continuous(expand = c(0, NA), breaks = breaks_pretty(10)) +
+  geom_line(linewidth = 0.8) +
+  geom_label_repel(
+    aes(x = age_group, label = label),
+    nudge_x = 10,
+    nudge_y = 0.1,
+    na.rm = TRUE,
+    size = 4
+  ) +
+  scale_colour_manual(values = sex_pal) +
+  scale_x_continuous(expand = c(0, NA), breaks = c(c(0, 1), seq(5, 85, 5))) +
   scale_y_continuous(trans = "log10") +
+  labs(x = "Age group", y = "Death rate") +
   theme_thesis() +
-  labs(x = "Age group", y = "Death rate")
+  theme(legend.position = "none")
 
 save_plot(
   here(
@@ -179,24 +186,37 @@ p <- mx |>
     broad_age_group = case_when(
       age_group < 20 ~ "0-19 years",
       age_group >= 20 & age_group < 60 ~ "20-59 years",
-      age_group >= 60 ~ "80+ years",
+      age_group >= 60 ~ "60+ years",
     )
   ) |>
   group_by(sex, YEAR, broad_age_group) |>
   summarise(death_rate = sum(deaths) / sum(population)) |>
   ggplot(aes(x = YEAR, y = death_rate, group = sex, colour = sex)) +
-  geom_line() +
+  geom_line(linewidth = 0.8) +
   facet_wrap(~broad_age_group, scales = "free_y") +
-  # scale_x_continuous(expand = c(0, NA), breaks = breaks_pretty(10)) +
-  # scale_y_continuous(trans = "log10") +
+  scale_colour_manual(values = sex_pal) +
+  scale_x_continuous(breaks = breaks_pretty(8)) +
+  scale_y_continuous(trans = "log10") +
+  labs(x = "year", y = "Death rate") +
   theme_thesis() +
-  labs(x = "year", y = "Death rate")
+  theme(legend.position = "none")
 
 p_e0 <- e0 |>
+  mutate(label = ifelse(YEAR == max(YEAR), sex, NA_character_)) |>
   ggplot(aes(x = YEAR, y = ex, group = sex, colour = sex)) +
-  geom_line() +
+  geom_line(linewidth = 0.8) +
+  geom_label_repel(
+    aes(x = YEAR, label = label),
+    nudge_x = 0,
+    nudge_y = 0.1,
+    na.rm = TRUE,
+    size = 3
+  ) +
+  scale_colour_manual(values = sex_pal) +
+  scale_x_continuous(breaks = breaks_pretty(8)) +
+  labs(x = "year", y = "Life expectancy") +
   theme_thesis() +
-  labs(x = "year", y = "Life expectancy")
+  theme(legend.position = "none")
 
 save_plot(
   here(
