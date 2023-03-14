@@ -5,6 +5,7 @@
 *.json
 *.geojson
 *.pdf
+*.png
 
 # logs
 *.log

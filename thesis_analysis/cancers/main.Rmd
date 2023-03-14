@@ -24,6 +24,7 @@ library(GGally)
 library(treemap)
 
 source(here("thesis_analysis", "theme_thesis.R"))
+source(here("thesis_analysis", "palette_thesis.R"))
 ```
 
 ## data
@@ -58,6 +59,56 @@ cause_q <- lst(
   )
 )
 
+cause_q_all_cancers <- lst(
+  male = read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_male_",
+        args$model,
+        "_All_cancers_80q0.rds"
+      )
+    )
+  ),
+  female = read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_female_",
+        args$model,
+        "_All_cancers_80q0.rds"
+      )
+    )
+  )
+)
+
+for (s in c("male", "female")) {
+  print(
+    cor(
+      apply(
+        X = cause_q[[s]],
+        MARGIN = c(1, 2, 4),
+        FUN = median
+      )[, , "All cancers"] |>
+        as.numeric(),
+      apply(
+        X = cause_q_all_cancers[[s]],
+        MARGIN = c(1, 2),
+        FUN = median
+      ) |>
+        as.numeric()
+    )
+  )
+
+  cause_q[[s]][, , , "All cancers"] <- cause_q_all_cancers[[s]]
+}
+```
+
+```{r covariate and shape data}
 shape <- geojson_sf(here("data", "covariates", "LAD2020_ENG_BGC.geojson"))
 
 cause_list <- lst(
@@ -118,18 +169,6 @@ regions <- c(
   "South West",
   "London"
 )
-
-region_col <- c(
-  "#1F78B4",
-  "#E31A1C",
-  "#FF7F00",
-  "#B15928",
-  "#A6CEE3",
-  "#33A02C",
-  "#6A3D9A",
-  "#FDBF6F",
-  "#FB9A99"
-)
 ```
 
 ```{r treemap data}
@@ -169,7 +208,7 @@ tm_df <- bind_rows(
   mutate(prop = deaths * 100 / sum(deaths))
 ```
 
-```{r calculate median 80q0 in over time}
+```{r calculate median 80q0 over time}
 median_q <- lst()
 for (s in c("male", "female")) {
   median_q[[s]] <- apply(
@@ -226,7 +265,10 @@ p <- tm_df |>
     lab = str_c(
       cause_lab,
       "\n",
-      format(deaths, big.mark = ",")
+      format(deaths, big.mark = ","),
+      "\n(",
+      format(round(prop, 1), nsmall = 1),
+      "%)"
     )
   ) |>
   treemap(
@@ -235,7 +277,7 @@ p <- tm_df |>
     vSize = "deaths",
     vColor = "sex",
     palette = "Greys",
-    fontsize.labels = 18,
+    fontsize.labels = 16,
     fontsize.title = 0,
     position.legend = "none",
     bg.labels = 0,
@@ -289,7 +331,7 @@ for (s in c("female", "male")) {
       scale_fill_continuous_sequential(
         palette = "Reds",
         name = str_c("Probability of dying for \n", disease),
-        n.breaks = 5
+        breaks = breaks_pretty(n = 3)
       ) +
       scale_y_continuous(expand = c(0, 0)) +
       theme_void() +
@@ -363,7 +405,7 @@ for (s in c("female", "male")) {
         mid = change_mp,
         name = str_c("Change in probability for \n", disease),
         labels = percent,
-        n.breaks = 4
+        breaks = breaks_pretty(n = 3)
       ) +
       scale_y_continuous(expand = c(0, 0)) +
       theme_void() +
@@ -528,7 +570,7 @@ for (s in c("female", "male")) {
       x = "Income deprivation rank",
       y = "Probability of dying between birth and 80 in 2019"
     ) +
-    scale_colour_manual(values = region_col, name = "") +
+    scale_colour_manual(values = region_pal, name = "") +
     scale_x_continuous(
       breaks = c(n_lad / 7, 6 * n_lad / 7),
       labels = c("Least deprived", "Most deprived")
@@ -536,8 +578,6 @@ for (s in c("female", "male")) {
     theme_thesis() +
     theme(
       legend.key.size = unit(0.01, "npc"),
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
       axis.ticks.x = element_blank()
     )
 
@@ -640,9 +680,7 @@ for (s in c("female", "male")) {
     theme(
       legend.position = "top",
       axis.text.x = element_blank(),
-      axis.ticks.x = element_blank(),
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
+      axis.ticks.x = element_blank()
     )
 
   save_plot(
@@ -678,10 +716,10 @@ for (s in c("female", "male")) {
     ) +
     labs(
       x = "Probability of dying between birth and 80 in 2002",
-      y = "Relative change in probability of dying from 2002 to 2019"
+      y = "Percent change in probability of dying from 2002 to 2019"
     ) +
-    scale_colour_manual(values = region_col, name = "") +
-    scale_x_continuous(n.breaks = 4) +
+    scale_colour_manual(values = region_pal, name = "") +
+    scale_x_continuous(breaks = breaks_pretty(n = 3)) +
     scale_y_continuous(labels = percent) +
     theme_thesis() +
     theme(legend.key.size = unit(0.01, "npc"))
