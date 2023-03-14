@@ -6,7 +6,7 @@ nqx <- function(age, mx, ax, n, x) {
   ax[is.na(ax)] <- width / 2
   mx[mx == 0] <- 1e-10
 
-  idx <- age >= x & age <= x + n
+  idx <- age >= x & age < x + n
   ax <- ax[idx]
   width <- width[idx]
   mx <- mx[idx]

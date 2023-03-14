@@ -4,6 +4,7 @@ library(here)
 library(future.apply)
 library(tidyverse)
 library(tidync)
+library(abind)
 
 source(here("thesis_analysis", "cancers", "nqx.R"))
 
@@ -27,6 +28,7 @@ nc <- tidync(
 
 death_rates <- nc |> hyper_array(force = TRUE)
 death_rates <- death_rates$`__xarray_dataarray_variable__`
+death_rates <- abind(death_rates, apply(death_rates, MARGIN = c(1, 2, 3, 4), FUN = sum), along = 5)
 
 system.time(
   death_rates <- future_apply(
@@ -44,7 +46,7 @@ dimnames(death_rates) <- list(
   year = hyper_transforms(nc)$year$year,
   LAD = hyper_transforms(nc)$LAD$LAD,
   sample = hyper_transforms(nc)$sample$index,
-  cause = hyper_transforms(nc)$cause$cause
+  cause = c(hyper_transforms(nc)$cause$cause, "All cancers")
 )
 
 write_rds(
