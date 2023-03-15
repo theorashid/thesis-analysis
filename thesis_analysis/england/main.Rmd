@@ -191,7 +191,7 @@ p <- quantile_e0 |>
     labels = c("Lowest life expectancy", "Highest life expectancy")
   ) +
   guides(colour = guide_legend(override.aes = list(size = 1, linewidth = 1))) +
-  labs(x = "Life expectancy rank", y = "Life expectancy at birth (years)") +
+  labs(x = "Life expectancy rank", y = "Life expectancy (years)") +
   theme_thesis() +
   theme(
     legend.position = "top",
@@ -223,6 +223,32 @@ save_plot(
     "england",
     "figures",
     "distribution.pdf"
+  ),
+  p
+)
+```
+
+## time series
+```{r time series plot}
+p <- median_e0 |>
+  ggplot(aes(x = year, y = e0, colour = sex)) +
+  geom_jitter(
+    width = 0.05,
+    size = 0.1,
+    alpha = 0.1
+  ) +
+  facet_wrap(~ factor(sex, levels = sexes)) +
+  scale_colour_manual(values = sex_pal, name = "") +
+  labs(x = "year", y = "Life expectancy (years)") +
+  theme_thesis() +
+  theme(legend.position = "none")
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "scatter_time.pdf"
   ),
   p
 )
