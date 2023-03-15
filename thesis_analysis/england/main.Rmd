@@ -67,6 +67,46 @@ dimnames(e0) <- list(
   MSOA2011 = dimnames(e0)[[3]],
   sample = dimnames(e0)[[4]]
 )
+
+e0_global <- abind(
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_GLOBAL",
+        "_female_",
+        "nested_as_at",
+        "_e0.rds"
+      )
+    )
+  ),
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_GLOBAL",
+        "_male_",
+        "nested_as_at",
+        "_e0.rds"
+      )
+    )
+  ),
+  along = 0,
+  new.names = sexes
+) |>
+  apply(
+    MARGIN = c(1, 2),
+    FUN = median
+  ) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(`e0` = Freq, sex = Var1, year = Var2) |>
+  mutate(year = as.integer(year)) |>
+  arrange()
 ```
 
 ```{r covariate and shape data}
@@ -166,23 +206,29 @@ for (i in seq_along(benchmark$sex)) {
 
 ```{r distribution plot}
 p <- quantile_e0 |>
+  mutate(
+    sex_year = factor(
+      str_c(sex, ", ", year),
+      levels = str_c(rep(sexes, each = 2), ", ", rep(c(2002, 2019), 2))
+    )
+  ) |>
   ggplot(aes(x = rank)) +
   geom_segment(
     aes(
       xend = rank,
       y = `2.5%`,
       yend = `97.5%`,
-      colour = str_c(sex, ", ", year)
+      colour = sex_year
     ),
     alpha = 0.05,
     linewidth = 0.1
   ) +
-  geom_point(aes(y = `50%`, colour = str_c(sex, ", ", year)), size = 0.1) +
+  geom_point(aes(y = `50%`, colour = sex_year), size = 0.1) +
   facet_wrap(~ factor(sex, levels = sexes)) +
   scale_colour_manual(
     values = c(
-      desaturate(sex_pal[1], amount = 0.5), sex_pal[1],
-      desaturate(sex_pal[2], amount = 0.5), sex_pal[2]
+      desaturate(sex_pal[2], amount = 0.5), sex_pal[2],
+      desaturate(sex_pal[1], amount = 0.5), sex_pal[1]
     ),
     name = ""
   ) +
@@ -195,7 +241,8 @@ p <- quantile_e0 |>
   theme_thesis() +
   theme(
     legend.position = "top",
-    axis.ticks.x = element_blank()
+    axis.ticks.x = element_blank(),
+    strip.text = element_blank()
   )
 
 p <- p +
@@ -231,17 +278,23 @@ save_plot(
 ## time series
 ```{r time series plot}
 p <- median_e0 |>
+  mutate(sex = factor(sex, levels = sexes)) |>
   ggplot(aes(x = year, y = e0, colour = sex)) +
   geom_jitter(
     width = 0.05,
-    size = 0.1,
+    size = 0.01,
     alpha = 0.1
   ) +
+  geom_line(data = e0_global, linewidth = 0.8) +
   facet_wrap(~ factor(sex, levels = sexes)) +
-  scale_colour_manual(values = sex_pal, name = "") +
+  scale_colour_manual(values = rev(sex_pal), name = "") +
+  scale_x_continuous(breaks = breaks_pretty(8)) +
   labs(x = "year", y = "Life expectancy (years)") +
   theme_thesis() +
-  theme(legend.position = "none")
+  theme(
+    legend.position = "top",
+    strip.text = element_blank()
+  )
 
 save_plot(
   here(
@@ -249,6 +302,84 @@ save_plot(
     "england",
     "figures",
     "scatter_time.pdf"
+  ),
+  p
+)
+```
+
+```{r inequality time series plot}
+p <- left_join(
+  apply(
+    X = e0,
+    MARGIN = c(1, 2, 4),
+    FUN = \(x) max(x) - min(x)
+  ) |>
+    apply(
+      MARGIN = c(1, 2),
+      FUN = median
+    ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(`max_min` = Freq),
+  apply(
+    X = e0,
+    MARGIN = c(1, 2, 4),
+    FUN = \(x) quantile(x, 0.99) - quantile(x, 0.01)
+  ) |>
+    apply(
+      MARGIN = c(1, 2),
+      FUN = median
+    ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(`99_1` = Freq)
+) |>
+  mutate(year = as.integer(year)) |>
+  pivot_longer(
+    cols = c(max_min, `99_1`),
+    names_to = "range_type",
+    values_to = "ranges"
+  ) |>
+  mutate(sex = factor(sex, levels = sexes)) |>
+  ggplot(aes(x = year, y = ranges, colour = sex)) +
+  geom_point(size = 0.8, alpha = 0.8) +
+  geom_line(
+    aes(linetype = range_type),
+    linewidth = 0.5,
+    alpha = 0.8
+  ) +
+  facet_wrap(~sex) +
+  scale_x_continuous(breaks = pretty_breaks(8)) +
+  scale_colour_manual(values = rev(sex_pal), name = "") +
+  scale_linetype(
+    labels = c(
+      "maximum-minimum difference",
+      expression(paste(99^
+        {
+          th
+        } - 1^{
+          st
+        }, " percentile difference"))
+    ),
+    name = ""
+  ) +
+  guides(linetype = guide_legend(ncol = 1), colour = guide_legend(ncol = 1)) +
+  labs(
+    x = "year",
+    y = "Life expectancy difference (years)"
+  ) +
+  theme_thesis() +
+  theme(
+    legend.position = "top",
+    strip.text = element_blank()
+  )
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "inequality_time.pdf"
   ),
   p
 )
