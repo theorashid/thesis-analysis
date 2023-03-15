@@ -38,10 +38,10 @@ population <- population$population
 deaths <- sweep(death_rates, c(1, 2, 3), population, "*")
 
 mean_age_death <- apply(
-  sweep(deaths, 3, midpoints, "*")[ , , 1:17, , ],
+  sweep(deaths, 3, midpoints, "*")[, , 1:17, , ],
   c(1, 2, 4, 5),
   sum
-) / apply(deaths[ , , 1:17, , ], c(1, 2, 4, 5), sum)
+) / apply(deaths[, , 1:17, , ], c(1, 2, 4, 5), sum)
 
 dimnames(mean_age_death) <- list(
   year = hyper_transforms(nc)$year$year,
