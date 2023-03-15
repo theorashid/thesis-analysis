@@ -24,6 +24,7 @@ library(ggrepel)
 
 source(here("thesis_analysis", "theme_thesis.R"))
 source(here("thesis_analysis", "palette_thesis.R"))
+source(here("thesis_analysis", "skeletons.R"))
 ```
 
 ## data
@@ -51,37 +52,12 @@ Maps of life expectancy from all deaths 2002-19.
 ```{r map e0}
 e0_LAD <- read_csv(here("data", "eda", "e0_eng_LAD.csv"))
 
-map_skeleton <- list(
-  geom_sf(colour = "white", linewidth = 0.01),
+map_skeleton <- append(
+  map_skeleton,
   scale_fill_continuous_sequential(
     palette = "Reds",
     rev = FALSE,
     name = ""
-  ),
-  theme_void(),
-  theme(legend.position = "none")
-)
-
-ridge_skeleton <- list(
-  geom_density_ridges_gradient(colour = "#cccccc", size = 0.1),
-  scale_y_continuous(expand = c(0, 0)),
-  theme_void(),
-  theme(
-    legend.direction = "horizontal",
-    legend.position = "bottom",
-    legend.key.width = unit(9, units = "pt"),
-    legend.key.height = unit(3, units = "pt"),
-    legend.text = element_text(size = 3),
-    legend.title = element_text(
-      size = 3,
-      face = "bold"
-    )
-  ),
-  guides(
-    fill = guide_colorbar(
-      title.position = "bottom",
-      title.hjust = 0
-    )
   )
 )
 

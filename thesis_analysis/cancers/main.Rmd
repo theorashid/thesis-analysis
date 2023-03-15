@@ -25,6 +25,7 @@ library(treemap)
 
 source(here("thesis_analysis", "theme_thesis.R"))
 source(here("thesis_analysis", "palette_thesis.R"))
+source(here("thesis_analysis", "skeletons.R"))
 ```
 
 ## data
@@ -314,43 +315,22 @@ for (s in c("female", "male")) {
           mutate(LAD2020 = LAD)
       ) |>
       ggplot(aes(fill = `80q0`)) +
-      geom_sf(colour = "white", linewidth = 0.01) +
+      map_skeleton +
       scale_fill_continuous_sequential(
         palette = "Reds",
         name = ""
-      ) +
-      theme_void() +
-      theme(legend.position = "none")
+      )
 
     p <- median_q |>
       pluck(s) |>
       filter(year == 2019) |>
       filter(cause == disease) |>
       ggplot(aes(x = `80q0`, y = 1, fill = after_stat(x))) +
-      geom_density_ridges_gradient(colour = "#cccccc", size = 0.1) +
+      ridge_skeleton +
       scale_fill_continuous_sequential(
         palette = "Reds",
         name = str_c("Probability of dying for \n", disease),
         breaks = breaks_pretty(n = 3)
-      ) +
-      scale_y_continuous(expand = c(0, 0)) +
-      theme_void() +
-      theme(
-        legend.direction = "horizontal",
-        legend.position = "bottom",
-        legend.key.width = unit(9, units = "pt"),
-        legend.key.height = unit(3, units = "pt"),
-        legend.text = element_text(size = 3),
-        legend.title = element_text(
-          size = 3,
-          face = "bold"
-        )
-      ) +
-      guides(
-        fill = guide_colorbar(
-          title.position = "bottom",
-          title.hjust = 0
-        )
       )
 
     range_change <- median_q_rel_change |>
@@ -385,46 +365,25 @@ for (s in c("female", "male")) {
           mutate(LAD2020 = LAD)
       ) |>
       ggplot(aes(fill = `d80q0`)) +
-      geom_sf(colour = "white", linewidth = 0.01) +
+      map_skeleton +
       scale_fill_continuous_divergingx(
         palette = "Geyser",
         mid = change_mp,
         name = "",
         labels = percent
-      ) +
-      theme_void() +
-      theme(legend.position = "none")
+      )
 
     p_change <- median_q_rel_change |>
       pluck(s) |>
       filter(cause == disease) |>
       ggplot(aes(x = `d80q0`, y = 1, fill = after_stat(x))) +
-      geom_density_ridges_gradient(colour = "#cccccc", size = 0.1) +
+      ridge_skeleton +
       scale_fill_continuous_divergingx(
         palette = "Geyser",
         mid = change_mp,
         name = str_c("Change in probability for \n", disease),
         labels = percent,
         breaks = breaks_pretty(n = 3)
-      ) +
-      scale_y_continuous(expand = c(0, 0)) +
-      theme_void() +
-      theme(
-        legend.direction = "horizontal",
-        legend.position = "bottom",
-        legend.key.width = unit(9, units = "pt"),
-        legend.key.height = unit(3, units = "pt"),
-        legend.text = element_text(size = 3),
-        legend.title = element_text(
-          size = 3,
-          face = "bold"
-        )
-      ) +
-      guides(
-        fill = guide_colorbar(
-          title.position = "bottom",
-          title.hjust = 0
-        )
       )
 
     grid <- plot_grid(map, map_change)
@@ -450,34 +409,6 @@ for (s in c("female", "male")) {
 
 Pair plot of 80q0 in 2019
 ```{r 80q0 correlation plot}
-pair_skeleton <- list(
-  scale_fill_continuous_divergingx(
-    palette = "BrBG",
-    rev = TRUE,
-    mid = 0,
-    limits = c(-1, 1),
-    name = "Correlation"
-  ),
-  guides(
-    fill = guide_colorbar(
-      title.position = "top",
-      title.hjust = 0
-    )
-  ),
-  theme_thesis(),
-  theme(
-    axis.line = element_blank(),
-    legend.direction = "horizontal",
-    legend.key.width = unit(15, units = "pt"),
-    legend.key.height = unit(5, units = "pt"),
-    legend.text = element_text(size = 5),
-    legend.title = element_text(
-      size = 5,
-      face = "bold"
-    )
-  )
-)
-
 p_female <- median_q |>
   pluck("female") |>
   filter(year == 2019) |>
@@ -501,7 +432,8 @@ p_female <- median_q |>
     hjust = 0,
     size = 1.5
   ) +
-  labs(caption = paste("Probability of dying between birth and 80 in 2019,", "women"))
+  labs(caption = paste("Probability of dying between birth and 80 in 2019,", "women")) +
+  theme_thesis()
 
 p_male <- median_q |>
   pluck("male") |>
@@ -527,6 +459,7 @@ p_male <- median_q |>
     size = 1.5
   ) +
   labs(caption = paste("Probability of dying between birth and 80 in 2019,", "men")) +
+  theme_thesis() +
   theme(legend.position = "none")
 
 grid <- plot_grid(p_female + theme(legend.position = "none"), p_male)
