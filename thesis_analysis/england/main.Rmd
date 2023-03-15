@@ -385,6 +385,46 @@ save_plot(
 )
 ```
 
+## sex comparison
+```{r inequality time series plot}
+p_level <- median_e0 |>
+  filter(year == 2019) |>
+  pivot_wider(names_from = sex, values_from = `e0`) |>
+  ggplot(aes(x = women, y = men)) +
+  geom_point(colour = "#5b6980f5", size = 0.1, alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0) +
+  scale_x_continuous(limits = median_e0 |> filter(year == 2019) |> pull(e0) |> range()) +
+  scale_y_continuous(limits = median_e0 |> filter(year == 2019) |> pull(e0) |> range()) +
+  labs(
+    x = "Life expectancy in 2019, women",
+    y = "Life expectancy in 2019, men"
+  ) +
+  theme_thesis()
+
+p_change <- median_e0_change |>
+  pivot_wider(names_from = sex, values_from = `de0`) |>
+  ggplot(aes(x = women, y = men)) +
+  geom_point(colour = "#5b6980f5", size = 0.1, alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0) +
+  scale_x_continuous(limits = median_e0_change |> pull(de0) |> range()) +
+  scale_y_continuous(limits = median_e0_change |> pull(de0) |> range()) +
+  labs(
+    x = "Life expectancy change from 2002 to 2019, women",
+    y = "Life expectancy change from 2002 to 2019, men"
+  ) +
+  theme_thesis()
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "sex_comp.pdf"
+  ),
+  plot_grid(p_level, p_change)
+)
+```
+
 ## jitter change between periods
 ```{r calculate change 2002, 2006, 2010, 2014, 2019}
 median_e0_changes <- apply(
