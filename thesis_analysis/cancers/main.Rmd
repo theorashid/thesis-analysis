@@ -630,7 +630,7 @@ for (s in c("female", "male")) {
 
 # Change against starting 80q0
 
-```{r distribution plot}
+```{r change plot}
 for (s in c("female", "male")) {
   p <- median_q |>
     pluck(s) |>
