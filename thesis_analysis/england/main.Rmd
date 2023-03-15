@@ -421,7 +421,7 @@ save_plot(
     "figures",
     "sex_comp.pdf"
   ),
-  plot_grid(p_level, p_change)
+  plot_grid(p_level + coord_equal(), p_change + coord_equal())
 )
 ```
 
