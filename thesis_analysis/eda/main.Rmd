@@ -184,16 +184,17 @@ e0 <- read_csv(here("data", "eda", "e0_eng_time.csv")) |>
 p <- mx |>
   mutate(
     broad_age_group = case_when(
-      age_group < 20 ~ "0-19 years",
-      age_group >= 20 & age_group < 60 ~ "20-59 years",
-      age_group >= 60 ~ "60+ years",
+      age_group < 15 ~ "0-14 years, adolescence",
+      age_group >= 15 & age_group < 30 ~ "15-29 years, young adulthood",
+      age_group >= 30 & age_group < 70 ~ "30-69 years, working ages",
+      age_group >= 70 ~ "70+ years, older ages",
     )
   ) |>
   group_by(sex, YEAR, broad_age_group) |>
   summarise(death_rate = sum(deaths) / sum(population)) |>
   ggplot(aes(x = YEAR, y = death_rate, group = sex, colour = sex)) +
   geom_line(linewidth = 0.8) +
-  facet_wrap(~broad_age_group, scales = "free_y") +
+  facet_wrap(~broad_age_group, scales = "free_y", ncol = 1) +
   scale_colour_manual(values = sex_pal) +
   scale_x_continuous(breaks = breaks_pretty(8)) +
   scale_y_continuous(trans = "log10") +
@@ -225,6 +226,6 @@ save_plot(
     "figures",
     "age_mx_time.pdf"
   ),
-  plot_grid(p, p_e0, ncol = 1)
+  plot_grid(p, p_e0, ncol = 2, rel_widths = c(2, 3))
 )
 ```
