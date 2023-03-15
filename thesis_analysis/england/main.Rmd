@@ -28,7 +28,9 @@ source(here("thesis_analysis", "theme_thesis.R"))
 ## data
 
 ```{r data}
-args <- lst(region = "MSOA", model = "nested_as_at")
+args <- lst(region = "MSOA", model = "nb_nested_as_at_st")
+
+sexes <- c("women", "men")
 
 e0 <- abind(
   read_rds(
@@ -56,8 +58,35 @@ e0 <- abind(
     )
   ),
   along = 0,
-  new.names = c("female", "male")
+  new.names = sexes
 )
+
+dimnames(e0) <- list(
+  sex = dimnames(e0)[[1]],
+  year = dimnames(e0)[[2]],
+  MSOA2011 = dimnames(e0)[[3]],
+  sample = dimnames(e0)[[4]]
+)
+```
+
+```{r covariate and shape data}
+shape <- geojson_sf(here("data", "covariates", "MSOA2011_ENG_BGC.geojson"))
+
+imd <- read_csv(here("data", "covariates", "IMD_MSOA2011_2019.csv")) |>
+  mutate(`income rank` = rank(`income score`))
+
+lookup <- read_csv(
+  here(
+    "data",
+    "covariates",
+    "LSOA_MSOA_LAD_GOR_CTRY_lookup.csv"
+  )
+) |>
+  select(MSOA2011, LAD2020, LAD2020NM, GOR2011, GOR2011NM) |>
+  distinct() |>
+  arrange(LAD2020)
+
+n_msoa <- length(unique(lookup$MSOA2011))
 ```
 
 ```{r calculate median e0 in over time}
@@ -68,7 +97,7 @@ median_e0 <- apply(
 ) |>
   as.data.frame.table(stringsAsFactors = FALSE) |>
   as_tibble() |>
-  rename(`e0` = Freq, sex = Var1, year = Var2, MSOA2011 = Var3) |>
+  rename(`e0` = Freq) |>
   mutate(year = as.integer(year)) |>
   arrange()
 ```
@@ -84,6 +113,122 @@ median_e0_change <- apply(
   rename(de0 = Freq)
 ```
 
+## distribution
+
+```{r calculate quantiles e0 in 2002 and 2019}
+quantile_e0 <- apply(
+  X = e0[, c("2002", "2019"), , ],
+  MARGIN = c(1, 2, 3),
+  FUN = quantile,
+  p = c(0.025, 0.5, 0.975)
+) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(quantile = Var1, `e0` = Freq) |>
+  arrange() |>
+  pivot_wider(names_from = quantile, values_from = `e0`) |>
+  group_by(sex, year) |>
+  mutate(rank = rank(`50%`)) |>
+  ungroup()
+```
+
+```{r calculate rank of benchmark countries}
+n_ctry <- 5
+benchmark <- tibble(
+  sex = c(rep("women", n_ctry), rep("men", n_ctry)),
+  country = c(
+    c("England", "USA", "Hong Kong", "Spain", "Bulgaria"),
+    c("England", "USA", "Hong Kong", "Switzerland", "Latvia")
+  ),
+  year = rep("2019", n_ctry * 2),
+  e0_global = c(
+    c(83.7, 81.4, 88.1, 86.2, 78.5), # Female 2019
+    c(80.1, 76.3, 82.2, 81.9, 70.8) # Male 2019
+  )
+) |>
+  mutate(
+    label = str_c(country, " ", "(", e0_global, ")"),
+    arrow_start = e0_global + c(c(4, 4, 5, 4, 4), c(4, 4, 5, 4, 5.5)),
+    arrow_end = e0_global + c(rep(2, n_ctry * 2))
+  ) |>
+  mutate(text_y = arrow_start + 0.5)
+
+for (i in seq_along(benchmark$sex)) {
+  global <- benchmark[i, ] |> pull("e0_global")
+  benchmark[i, "rank"] <- quantile_e0 |>
+    filter(sex == benchmark[i, ] |> pull(sex)) |>
+    filter(year == 2019) |>
+    mutate(min_rank = rank(abs(`50%` - global))) |>
+    filter(min_rank == 1) |>
+    pull("rank")
+}
+```
+
+```{r distribution plot}
+p <- quantile_e0 |>
+  ggplot(aes(x = rank)) +
+  geom_segment(
+    aes(
+      xend = rank,
+      y = `2.5%`,
+      yend = `97.5%`,
+      colour = str_c(sex, ", ", year)
+    ),
+    alpha = 0.05,
+    linewidth = 0.1
+  ) +
+  geom_point(aes(y = `50%`, colour = str_c(sex, ", ", year)), size = 0.1) +
+  facet_wrap(~ factor(sex, levels = sexes)) +
+  scale_colour_manual(
+    values = c(
+      desaturate(sex_pal[1], amount = 0.5), sex_pal[1],
+      desaturate(sex_pal[2], amount = 0.5), sex_pal[2]
+    ),
+    name = ""
+  ) +
+  scale_x_continuous(
+    breaks = c(n_msoa / 7, n_msoa * 6 / 7),
+    labels = c("Lowest life expectancy", "Highest life expectancy")
+  ) +
+  guides(colour = guide_legend(override.aes = list(size = 1, linewidth = 1))) +
+  labs(x = "Life expectancy rank", y = "Life expectancy at birth (years)") +
+  theme_thesis() +
+  theme(
+    legend.position = "top",
+    axis.ticks.x = element_blank()
+  )
+
+p <- p +
+  geom_point(data = benchmark, aes(x = rank, y = e0_global), size = 0.4) +
+  geom_segment(
+    data = benchmark,
+    aes(
+      x = rank, xend = rank,
+      y = arrow_start, yend = arrow_end
+    ),
+    size = 0.1,
+    alpha = 0.6,
+    arrow = arrow(angle = 20, type = "closed", length = unit(3, units = "pt"))
+  ) +
+  geom_text(
+    data = benchmark,
+    aes(x = rank, y = text_y, label = label),
+    size = 1.5
+  ) +
+  coord_cartesian(clip = "off")
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "distribution.pdf"
+  ),
+  p
+)
+```
+
+## jitter change between periods
 ```{r calculate change 2002, 2006, 2010, 2014, 2019}
 median_e0_changes <- apply(
   X = e0[, c("2002", "2006", "2010", "2014", "2019"), , ],
@@ -96,7 +241,7 @@ median_e0_changes <- apply(
   ) |>
   as.data.frame.table(stringsAsFactors = FALSE) |>
   as_tibble() |>
-  rename(de0 = Freq, year = Var1, sex = Var2, MSOA2011 = Var3) |>
+  rename(de0 = Freq) |>
   mutate(
     period = recode(
       year,
@@ -115,10 +260,10 @@ median_e0_changes <- apply(
       mutate(
         period = recode(
           year,
-          `2006` = "2002-2006",
-          `2010` = "2006-2010",
-          `2014` = "2010-2014",
-          `2019` = "2014-2019"
+          `2002` = "2002-2006",
+          `2006` = "2006-2010",
+          `2010` = "2010-2014",
+          `2014` = "2014-2019"
         )
       ) |>
       select(-e0, -year)
@@ -166,7 +311,7 @@ p <- ggplot(
     alpha = 0.1,
     width = 0.4
   ) +
-  facet_wrap(~sex) +
+  facet_wrap(~ factor(sex, levels = sexes)) +
   scale_colour_continuous_divergingx(
     palette = "Zissou",
     name = "Percentile of life expectancy at the start of each time period",
