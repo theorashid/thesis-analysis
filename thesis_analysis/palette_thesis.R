@@ -11,6 +11,6 @@ region_pal <- c(
 )
 
 sex_pal <- c(
-  "#1CA4AC",
-  "#F45C34"
+  "#21C2AB",
+  "#8724F4"
 )
