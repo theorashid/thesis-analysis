@@ -353,13 +353,13 @@ p <- left_join(
   scale_colour_manual(values = rev(sex_pal), name = "") +
   scale_linetype(
     labels = c(
-      "maximum-minimum difference",
       expression(paste(99^
         {
           th
         } - 1^{
           st
-        }, " percentile difference"))
+        }, " percentile difference")),
+      "maximum-minimum difference"
     ),
     name = ""
   ) +
