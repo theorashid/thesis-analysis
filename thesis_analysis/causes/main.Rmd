@@ -1,0 +1,96 @@
+---
+title: "causes"
+author: "Theo Rashid"
+date: "20/03/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## cause rates
+
+```{r imports}
+library(here)
+library(tidyverse)
+library(abind)
+
+source(here("thesis_analysis", "theme_thesis.R"))
+```
+
+## data
+
+```{r data}
+args <- lst(region = "LAD", model = "car_as_at")
+
+sexes <- c("women", "men")
+
+e0 <- abind(
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_female_",
+        args$model,
+        "_e0.rds"
+      )
+    )
+  ),
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_male_",
+        args$model,
+        "_e0.rds"
+      )
+    )
+  ),
+  along = 0,
+  new.names = sexes
+)
+
+dimnames(e0) <- list(
+  sex = dimnames(e0)[[1]],
+  year = dimnames(e0)[[2]],
+  LAD2020 = dimnames(e0)[[3]],
+  sample = dimnames(e0)[[4]]
+)
+```
+
+```{r calculate median e0 in over time}
+median_e0 <- apply(
+  X = e0,
+  MARGIN = c(1, 2, 3),
+  FUN = median
+) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(`e0` = Freq) |>
+  mutate(year = as.integer(year)) |>
+  arrange()
+```
+
+```{r calculate median e0 change 2002-2019}
+median_e0_change <- apply(
+  X = e0[, "2019", , ] - e0[, "2010", , ],
+  MARGIN = c(1, 2),
+  FUN = median
+) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(de0 = Freq)
+```
+
+```{r median of changes}
+median_e0 |>
+  filter(year == 2010 | year == 2019) |>
+  group_by(sex, LAD2020) |>
+  summarise(de0 = diff(e0)) |>
+  arrange(de0)
+```
