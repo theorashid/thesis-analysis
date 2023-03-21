@@ -112,7 +112,7 @@ save_plot(
 ## age-specific death rates
 
 Age-specific death rates for England 2002-19
-```{r 80q0 correlation plot}
+```{r age-mx plot}
 mx <- read_csv(here("data", "eda", "deaths_eng_age_time.csv")) |>
   mutate(sex = recode(sex, `1` = "men", `2` = "women"))
 
@@ -147,10 +147,32 @@ save_plot(
 )
 ```
 
+```{r age-mx plot void}
+p <- mx |>
+  group_by(sex, age_group) |>
+  summarise(death_rate = sum(deaths) / sum(population)) |>
+  ggplot(aes(x = age_group, y = death_rate, group = sex, colour = sex)) +
+  geom_line(linewidth = 0.8) +
+  scale_colour_manual(values = sex_pal) +
+  scale_y_continuous(trans = "log10") +
+  theme_void() +
+  theme(legend.position = "none")
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "eda",
+    "figures",
+    "age_mx_void.pdf"
+  ),
+  p
+)
+```
+
 ## age-specific death rates and life expectancy over time
 
 Age-specific death rates for England 2002-19
-```{r 80q0 correlation plot}
+```{r age-mx over time plot}
 mx <- read_csv(here("data", "eda", "deaths_eng_age_time.csv")) |>
   mutate(sex = recode(sex, `1` = "men", `2` = "women"))
 
