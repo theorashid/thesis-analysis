@@ -446,7 +446,7 @@ scale_sex <- list(
     p2 = 0.8,
     p3 = 0.8,
     p4 = 0.8,
-    name = str_c("Life expectancy, women"),
+    name = "Life expectancy, women",
     breaks = breaks_pretty(n = 5)
   ),
   men = scale_fill_continuous_divergingx(
@@ -459,7 +459,7 @@ scale_sex <- list(
     p2 = 0.8,
     p3 = 0.8,
     p4 = 0.8,
-    name = str_c("Life expectancy, men"),
+    name = "Life expectancy, men",
     breaks = breaks_pretty(n = 5)
   )
 )
@@ -638,6 +638,66 @@ save_plot(
     "england",
     "figures",
     "map_hex_carto.pdf"
+  ),
+  grid
+)
+```
+
+```{r map change 2002-2019}
+scale_change <- scale_fill_continuous_divergingx(
+  palette = "Geyser",
+  rev = TRUE,
+  mid = 0.0,
+  l3 = 40,
+  p3 = 0.3,
+  p4 = 0.3,
+  name = "Life expectancy change from 2002-19 (years)",
+  breaks = breaks_pretty(n = 8)
+)
+
+maps <- list()
+for (s in sexes) {
+  plot_df <- shape |>
+    left_join(lookup) |>
+    left_join(median_e0_change |> filter(sex == s))
+
+  maps[[s]] <- plot_df |>
+    ggplot(aes(fill = `de0`)) +
+    map_skeleton_msoa +
+    scale_change
+}
+
+grid <- plot_grid(
+  maps[["women"]], maps[["men"]],
+  labels = sexes,
+  label_x = 0.5,
+  label_size = 6
+)
+
+legend <- get_legend(
+  maps[["women"]] +
+    theme(
+      legend.direction = "horizontal",
+      legend.position = "top",
+      legend.key.width = unit(15, units = "pt"),
+      legend.key.height = unit(5, units = "pt"),
+      legend.title = element_text(
+        size = 3,
+        face = "bold"
+      ),
+      legend.text = element_text(size = 3)
+    ) +
+    guides(fill = guide_colourbar(title.position = "top"))
+)
+
+grid <- ggdraw(grid) + draw_grob(legend, 0, 0.35)
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "map_change.pdf"
   ),
   grid
 )
