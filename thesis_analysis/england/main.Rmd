@@ -604,8 +604,8 @@ p_level <- median_e0 |>
   filter(year == 2019) |>
   pivot_wider(names_from = sex, values_from = `e0`) |>
   ggplot(aes(x = women, y = men)) +
+  geom_abline(slope = 1, intercept = 0, colour = "grey20", linewidth = 0.5) +
   geom_point(colour = "#5b6980f5", size = 0.1, alpha = 0.5) +
-  geom_abline(slope = 1, intercept = 0) +
   scale_x_continuous(limits = median_e0 |> filter(year == 2019) |> pull(e0) |> range()) +
   scale_y_continuous(limits = median_e0 |> filter(year == 2019) |> pull(e0) |> range()) +
   labs(
@@ -617,8 +617,8 @@ p_level <- median_e0 |>
 p_change <- median_e0_change |>
   pivot_wider(names_from = sex, values_from = `de0`) |>
   ggplot(aes(x = women, y = men)) +
+  geom_abline(slope = 1, intercept = 0, colour = "grey20", linewidth = 0.5) +
   geom_point(colour = "#5b6980f5", size = 0.1, alpha = 0.5) +
-  geom_abline(slope = 1, intercept = 0) +
   scale_x_continuous(limits = median_e0_change |> pull(de0) |> range()) +
   scale_y_continuous(limits = median_e0_change |> pull(de0) |> range()) +
   labs(
