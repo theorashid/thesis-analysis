@@ -97,6 +97,52 @@ e0_global <- abind(
   rename(`e0` = Freq, sex = Var1, year = Var2) |>
   mutate(year = as.integer(year)) |>
   arrange()
+
+median_q <- bind_rows(
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_female_",
+        args$model,
+        "_q_agg.rds"
+      )
+    )
+  ) |>
+    mutate(sex = "women"),
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_male_",
+        args$model,
+        "_q_agg.rds"
+      )
+    )
+  ) |>
+    mutate(sex = "men")
+) |>
+  mutate(
+    age_group = factor(
+      age_group,
+      levels = c("15q0", "15q15", "40q30", "10q70")
+    ),
+    year = YEAR
+  ) |>
+  mutate(
+    age_range = recode(
+      age_group,
+      "15q0"  = "Childhood and early\nadolescence (0-14)",
+      "15q15" = "Young adulthood\n(15-29)",
+      "40q30" = "Working ages (30-69)",
+      "10q70" = "Older ages (70-79)"
+    )
+  ) |>
+  select(sex, MSOA2011, year, age_group, age_range, qmed)
 ```
 
 ```{r covariate and shape data}
@@ -740,8 +786,6 @@ p <- ggplot(
     axis.ticks.x = element_blank(),
     axis.line = element_blank(),
     panel.border = element_blank(),
-    panel.grid.major.x = element_blank(),
-    panel.grid.minor.x = element_blank(),
     legend.direction = "horizontal",
     legend.position = "bottom",
     legend.key.width = unit(30, units = "pt"),
@@ -764,6 +808,59 @@ save_plot(
     "england",
     "figures",
     "change.pdf"
+  ),
+  p
+)
+```
+
+# q jitter
+
+```{r q jitter plot}
+p <- median_q |>
+  filter(year == 2002 | year == 2019) |>
+  mutate(
+    sex_year = factor(
+      str_c(sex, ", ", year),
+      levels = str_c(rep(sexes, each = 2), ", ", rep(c(2002, 2019), 2))
+    )
+  ) |>
+  ggplot(aes(x = age_range, y = qmed, colour = sex_year)) +
+  geom_jitter(
+    position = position_jitterdodge(jitter.width = 0.5, dodge.width = 0.8),
+    size = 0.01,
+    alpha = 0.1
+  ) +
+  facet_wrap(~ factor(sex, levels = sexes)) +
+  scale_colour_manual(
+    values = c(
+      desaturate(sex_pal[2], amount = 0.5), sex_pal[2],
+      desaturate(sex_pal[1], amount = 0.5), sex_pal[1]
+    ),
+    name = ""
+  ) +
+  scale_y_continuous(
+    trans = "log10",
+    breaks = c(0.001, 0.005, 0.01, 0.05, 0.1, 0.5),
+    labels = percent
+  ) +
+  guides(colour = guide_legend(override.aes = list(size = 1, alpha = 0.8))) +
+  labs(
+    x = "Time period",
+    y = "Life expectancy change during period (years)"
+  ) +
+  theme_thesis() +
+  theme(
+    legend.position = "top",
+    axis.ticks.x = element_blank(),
+    strip.text = element_blank()
+  )
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "q_change.pdf"
   ),
   p
 )
