@@ -23,6 +23,8 @@ library(sf)
 library(ggridges)
 
 source(here("thesis_analysis", "theme_thesis.R"))
+source(here("thesis_analysis", "palette_thesis.R"))
+source(here("thesis_analysis", "skeletons.R"))
 ```
 
 ## data
@@ -110,8 +112,6 @@ e0_global <- abind(
 ```
 
 ```{r covariate and shape data}
-shape <- geojson_sf(here("data", "covariates", "MSOA2011_ENG_BGC.geojson"))
-
 imd <- read_csv(here("data", "covariates", "IMD_MSOA2011_2019.csv")) |>
   mutate(`income rank` = rank(`income score`))
 
@@ -124,9 +124,12 @@ lookup <- read_csv(
 ) |>
   select(MSOA2011, LAD2020, LAD2020NM, GOR2011, GOR2011NM) |>
   distinct() |>
-  arrange(LAD2020)
+  arrange(MSOA2011)
 
 n_msoa <- length(unique(lookup$MSOA2011))
+
+shape <- geojson_sf(here("data", "covariates", "MSOA2011_EW_BGC.geojson")) |>
+  filter(MSOA2011 %in% (lookup |> pull(MSOA2011)))
 ```
 
 ```{r calculate median e0 in over time}
@@ -382,6 +385,216 @@ save_plot(
     "inequality_time.pdf"
   ),
   p
+)
+```
+
+## maps
+```{r map level 2019 1}
+scale_sex <- list(
+  women = scale_fill_continuous_divergingx(
+    palette = "RdBu",
+    mid = e0_global |>
+      filter(sex == "women") |>
+      filter(year == 2019) |>
+      pull(e0),
+    p1 = 0.8,
+    p2 = 0.8,
+    p3 = 0.8,
+    p4 = 0.8,
+    name = str_c("Life expectancy, women"),
+    breaks = breaks_pretty(n = 5)
+  ),
+  men = scale_fill_continuous_divergingx(
+    palette = "RdBu",
+    mid = e0_global |>
+      filter(sex == "men") |>
+      filter(year == 2019) |>
+      pull(e0),
+    p1 = 0.8,
+    p2 = 0.8,
+    p3 = 0.8,
+    p4 = 0.8,
+    name = str_c("Life expectancy, men"),
+    breaks = breaks_pretty(n = 5)
+  )
+)
+
+maps <- list()
+manchester <- list()
+liverpool <- list()
+birmingham <- list()
+leeds <- list()
+london <- list()
+ridges <- list()
+
+for (s in sexes) {
+  plot_df <- shape |>
+    left_join(lookup) |>
+    left_join(
+      median_e0 |>
+        filter(sex == s) |>
+        filter(year == 2019)
+    )
+
+  maps[[s]] <- plot_df |>
+    ggplot(aes(fill = `e0`)) +
+    map_skeleton_msoa +
+    scale_sex[[s]]
+
+  manchester[[s]] <- plot_df |>
+    filter(LAD2020 == "E08000003") |>
+    ggplot(aes(fill = `e0`)) +
+    map_skeleton_msoa +
+    scale_sex[[s]]
+
+  liverpool[[s]] <- plot_df |>
+    filter(LAD2020 == "E08000012") |>
+    ggplot(aes(fill = `e0`)) +
+    map_skeleton_msoa +
+    scale_sex[[s]]
+
+  birmingham[[s]] <- plot_df |>
+    filter(LAD2020 == "E08000025") |>
+    ggplot(aes(fill = `e0`)) +
+    map_skeleton_msoa +
+    scale_sex[[s]]
+
+  leeds[[s]] <- plot_df |>
+    filter(LAD2020 == "E08000035") |>
+    ggplot(aes(fill = `e0`)) +
+    map_skeleton_msoa +
+    scale_sex[[s]]
+
+  london[[s]] <- plot_df |>
+    filter(GOR2011 == "E12000007") |>
+    ggplot(aes(fill = `e0`)) +
+    map_skeleton_msoa +
+    scale_sex[[s]]
+
+  ridges[[s]] <- median_e0 |>
+    filter(sex == s) |>
+    filter(year == 2019) |>
+    ggplot(aes(x = e0, y = 1, fill = after_stat(x))) +
+    ridge_skeleton +
+    scale_sex[[s]]
+}
+```
+
+```{r map level 2019 2}
+grid <- plot_grid(maps[["women"]], maps[["men"]])
+
+grid <- ggdraw(grid) +
+  draw_plot(ridges[["women"]], -0.1, 0.3, scale = 0.11) +
+  draw_plot(ridges[["men"]], 0.4, 0.3, scale = 0.11)
+
+grid <- ggdraw(grid) +
+  draw_plot(manchester[["women"]], -0.35, 0.38, scale = 0.1) +
+  draw_line(x = c(x = 0.255, 0.149), y = c(0.597, 0.83), size = 0.1) +
+  draw_label("Manchester", x = 0.15, y = 0.94, size = 3) +
+  draw_plot(liverpool[["women"]], -0.37, 0.23, scale = 0.1) +
+  draw_line(x = c(x = 0.215, 0.154), y = c(0.587, 0.73), size = 0.1) +
+  draw_label("Liverpool", x = 0.127, y = 0.79, size = 3) +
+  draw_plot(birmingham[["women"]], -0.39, 0.1, scale = 0.1) +
+  draw_line(x = c(x = 0.273, 0.135), y = c(0.449, 0.568), size = 0.1) +
+  draw_label("Birmingham", x = 0.11, y = 0.658, size = 3) +
+  draw_plot(leeds[["women"]], -0.05, 0.14, scale = 0.1) +
+  draw_line(x = c(x = 0.294, 0.413), y = c(0.64, 0.632), size = 0.1) +
+  draw_label("Leeds", x = 0.438, y = 0.694, hjust = 0, vjust = 0, size = 3) +
+  draw_plot(london[["women"]], -0.4, -0.1, scale = 0.16) +
+  draw_line(x = c(x = 0.373, 0.164), y = c(0.306, 0.38), size = 0.1) +
+  draw_label("London", x = 0.094, y = 0.491, size = 3)
+```
+
+```{r map level 2019 3}
+grid <- ggdraw(grid) +
+  draw_plot(manchester[["men"]], -0.35 + 0.5, 0.38, scale = 0.1) +
+  draw_line(x = c(x = 0.255 + 0.5, 0.149 + 0.5), y = c(0.597, 0.83), size = 0.1) +
+  draw_label("Manchester", x = 0.15 + 0.5, y = 0.94, size = 3) +
+  draw_plot(liverpool[["men"]], -0.37 + 0.5, 0.23, scale = 0.1) +
+  draw_line(x = c(x = 0.215 + 0.5, 0.154 + 0.5), y = c(0.587, 0.73), size = 0.1) +
+  draw_label("Liverpool", x = 0.127 + 0.5, y = 0.79, size = 3) +
+  draw_plot(birmingham[["men"]], -0.39 + 0.5, 0.1, scale = 0.1) +
+  draw_line(x = c(x = 0.273 + 0.5, 0.135 + 0.5), y = c(0.449, 0.568), size = 0.1) +
+  draw_label("Birmingham", x = 0.11 + 0.5, y = 0.658, size = 3) +
+  draw_plot(leeds[["men"]], -0.05 + 0.5, 0.14, scale = 0.1) +
+  draw_line(x = c(x = 0.294 + 0.5, 0.413 + 0.5), y = c(0.64, 0.632), size = 0.1) +
+  draw_label("Leeds", x = 0.45 + 0.5, y = 0.697, size = 3) +
+  draw_plot(london[["men"]], -0.4 + 0.5, -0.1, scale = 0.16) +
+  draw_line(x = c(x = 0.373 + 0.5, 0.164 + 0.5), y = c(0.306, 0.38), size = 0.1) +
+  draw_label("London", x = 0.094 + 0.5, y = 0.491, size = 3)
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "map_level.pdf"
+  ),
+  grid
+)
+```
+
+```{r map level 2019 hex carto}
+shape_carto <- geojson_sf(here("data", "covariates", "MSOA_hex.geojson")) |>
+  mutate(MSOA2011 = msoa11cd) |>
+  filter(MSOA2011 %in% (lookup |> pull(MSOA2011)))
+
+carto_background <- geojson_sf(here("data", "covariates", "MSOA_hex_background.geojson"))
+carto_labels <- geojson_sf(here("data", "covariates", "MSOA_hex_group_labels.geojson")) |>
+  filter(RegionNation != "Wales") |>
+  mutate(
+    lon = st_coordinates(geometry)[, 1],
+    lat = st_coordinates(geometry)[, 2]
+  )
+
+maps <- list()
+ridges <- list()
+for (s in sexes) {
+  maps[[s]] <- shape_carto |>
+    left_join(
+      median_e0 |>
+        filter(sex == s) |>
+        filter(year == 2019)
+    ) |>
+    ggplot(aes(fill = `e0`)) +
+    geom_sf(
+      fill = "grey95",
+      colour = "grey70",
+      linewidth = 0.1,
+      data = carto_background
+    ) +
+    map_skeleton +
+    scale_sex[[s]] +
+    geom_label(
+      aes(label = `Group-labe`, x = lon, y = lat),
+      size = 1,
+      label.size = 0,
+      fill = NA,
+      data = carto_labels
+    )
+
+  ridges[[s]] <- median_e0 |>
+    filter(sex == s) |>
+    filter(year == 2019) |>
+    ggplot(aes(x = e0, y = 1, fill = after_stat(x))) +
+    ridge_skeleton +
+    scale_sex[[s]]
+}
+
+grid <- plot_grid(maps[["women"]], maps[["men"]])
+
+grid <- ggdraw(grid) +
+  draw_plot(ridges[["women"]], -0.1, 0.3, scale = 0.11) +
+  draw_plot(ridges[["men"]], 0.4, 0.3, scale = 0.11)
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "map_hex_carto.pdf"
+  ),
+  grid
 )
 ```
 

@@ -4,6 +4,12 @@ map_skeleton <- list(
   theme(legend.position = "none")
 )
 
+map_skeleton_msoa <- list(
+  geom_sf(colour = NA, linewidth = 0.01),
+  theme_void(),
+  theme(legend.position = "none")
+)
+
 ridge_skeleton <- list(
   geom_density_ridges_gradient(colour = "#cccccc", size = 0.1),
   scale_y_continuous(expand = c(0, 0)),
