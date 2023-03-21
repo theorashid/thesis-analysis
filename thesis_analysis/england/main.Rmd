@@ -75,26 +75,14 @@ e0_global <- abind(
     here(
       "data",
       "life_table",
-      str_c(
-        args$region,
-        "_GLOBAL",
-        "_female_",
-        "nested_as_at",
-        "_e0.rds"
-      )
+      str_c(args$region, "_GLOBAL_female_nested_as_at_e0.rds")
     )
   ),
   read_rds(
     here(
       "data",
       "life_table",
-      str_c(
-        args$region,
-        "_GLOBAL",
-        "_male_",
-        "nested_as_at",
-        "_e0.rds"
-      )
+      str_c(args$region, "_GLOBAL_male_nested_as_at_e0.rds")
     )
   ),
   along = 0,
