@@ -112,8 +112,17 @@ e0_global <- abind(
 ```
 
 ```{r covariate and shape data}
-imd <- read_csv(here("data", "covariates", "IMD_MSOA2011_2019.csv")) |>
-  mutate(`income rank` = rank(`income score`))
+imd <- bind_rows(
+  read_csv(here("data", "covariates", "IMD_MSOA2011_2004.csv")) |> mutate(year = 2002),
+  read_csv(here("data", "covariates", "IMD_MSOA2011_2019.csv")) |> mutate(year = 2019)
+) |>
+  group_by(year) |>
+  mutate(
+    `Poverty` = rank(`income score`),
+    `Unemployment` = rank(`employment score`),
+    `Education` = rank(`education, skills and training score`)
+  ) |>
+  select(MSOA2011, year, Poverty, Unemployment, Education)
 
 lookup <- read_csv(
   here(
@@ -279,6 +288,7 @@ save_plot(
 ```
 
 ## time series
+
 ```{r time series plot}
 p <- median_e0 |>
   mutate(sex = factor(sex, levels = sexes)) |>
@@ -389,6 +399,7 @@ save_plot(
 ```
 
 ## maps
+
 ```{r map level 2019 1}
 scale_sex <- list(
   women = scale_fill_continuous_divergingx(
@@ -599,6 +610,7 @@ save_plot(
 ```
 
 ## sex comparison
+
 ```{r inequality time series plot}
 p_level <- median_e0 |>
   filter(year == 2019) |>
@@ -639,6 +651,7 @@ save_plot(
 ```
 
 ## jitter change between periods
+
 ```{r calculate change 2002, 2006, 2010, 2014, 2019}
 median_e0_changes <- apply(
   X = e0[, c("2002", "2006", "2010", "2014", "2019"), , ],
@@ -763,6 +776,91 @@ save_plot(
     "england",
     "figures",
     "change.pdf"
+  ),
+  p
+)
+```
+
+## poverty
+
+```{r plot IMD}
+p <- median_e0 |>
+  filter(year == 2002 | year == 2019) |>
+  pivot_wider(
+    names_from = year,
+    values_from = e0,
+    names_prefix = "e0_"
+  ) |>
+  left_join(
+    imd |>
+      pivot_longer(
+        cols = c(Poverty, Unemployment, Education),
+        names_to = "IMD",
+        values_to = "rank"
+      ) |>
+      pivot_wider(
+        names_from = year,
+        values_from = rank,
+        names_prefix = "rank_"
+      )
+  ) |>
+  mutate(sex = factor(sex, levels = sexes)) |>
+  ggplot() +
+  geom_point(
+    aes(x = rank_2002, y = e0_2002, colour = str_c(sex, ", 2002")),
+    size = 0.1,
+    alpha = 0.1
+  ) +
+  geom_point(
+    aes(x = rank_2019, y = e0_2019, colour = str_c(sex, ", 2019")),
+    size = 0.1,
+    alpha = 0.1
+  ) +
+  geom_smooth(
+    aes(x = rank_2002, y = e0_2002, colour = str_c(sex, ", 2002")),
+    se = FALSE,
+    size = 0.2,
+    alpha = 0.8,
+    show.legend = FALSE,
+    method = "loess"
+  ) +
+  geom_smooth(
+    aes(x = rank_2019, y = e0_2019, colour = str_c(sex, ", 2019")),
+    se = FALSE,
+    size = 0.2,
+    alpha = 0.8,
+    show.legend = FALSE,
+    method = "loess"
+  ) +
+  facet_grid(sex ~ IMD, scales = "free_x") +
+  scale_colour_manual(
+    values = c(
+      desaturate(sex_pal[2], amount = 0.5), sex_pal[2],
+      desaturate(sex_pal[1], amount = 0.5), sex_pal[1]
+    ),
+    name = "",
+    breaks = str_c(rep(sexes, each = 2), ", ", rep(c(2002, 2019), 2))
+  ) +
+  guides(colour = guide_legend(override.aes = list(size = 1, alpha = 0.8))) +
+  scale_x_continuous(
+    breaks = c(n_msoa / 7, 6 * n_msoa / 7),
+    labels = c("Least deprived", "Most deprived")
+  ) +
+  labs(x = "", y = "Life expectancy at birth (years)") +
+  theme_thesis() +
+  theme(
+    legend.key.size = unit(0.01, "npc"),
+    legend.position = "top",
+    axis.ticks.x = element_blank(),
+    strip.text.y = element_blank()
+  )
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "IMD.pdf"
   ),
   p
 )
