@@ -21,6 +21,7 @@ library(scales)
 library(geojsonsf)
 library(sf)
 library(ggridges)
+library(ggbeeswarm)
 
 source(here("thesis_analysis", "theme_thesis.R"))
 source(here("thesis_analysis", "palette_thesis.R"))
@@ -97,7 +98,9 @@ e0_global <- abind(
   rename(`e0` = Freq, sex = Var1, year = Var2) |>
   mutate(year = as.integer(year)) |>
   arrange()
+```
 
+```{r data q}
 median_q <- bind_rows(
   read_rds(
     here(
@@ -833,7 +836,7 @@ median_e0_changes <- apply(
   ) |>
   as.data.frame.table(stringsAsFactors = FALSE) |>
   as_tibble() |>
-  rename(de0 = Freq) |>
+  rename(year = Var1, de0 = Freq) |>
   mutate(
     period = recode(
       year,
@@ -864,45 +867,11 @@ median_e0_changes <- apply(
 
 ```{r e0 jitter change plot}
 p <- ggplot(
-  data = median_e0_changes |>
-    group_by(sex, period) |>
-    summarise(
-      pct1  = quantile(de0, p = 0.01),
-      pct5  = quantile(de0, p = 0.05),
-      pct25 = quantile(de0, p = 0.25),
-      pct50 = quantile(de0, p = 0.50),
-      pct75 = quantile(de0, p = 0.75),
-      pct95 = quantile(de0, p = 0.95),
-      pct99 = quantile(de0, p = 0.99)
-    ),
-  aes(x = period)
+  data = median_e0_changes,
+  aes(x = period, y = de0, colour = percentile)
 ) +
   geom_hline(yintercept = 0, linewidth = 0.05, alpha = 0.5) +
-  geom_crossbar(
-    aes(ymin = pct25, y = pct50, ymax = pct75),
-    linewidth = 0.2,
-    width = 0.3,
-    colour = "grey25"
-  ) +
-  geom_errorbar(
-    aes(ymin = pct5, ymax = pct95),
-    linewidth = 0.2,
-    width = 0.2,
-    colour = "grey25"
-  ) +
-  geom_errorbar(
-    aes(ymin = pct1, ymax = pct99),
-    linewidth = 0.2,
-    width = 0.1,
-    colour = "grey25"
-  ) +
-  geom_jitter(
-    data = median_e0_changes,
-    aes(x = period, y = de0, colour = percentile),
-    size = 0.01,
-    alpha = 0.1,
-    width = 0.4
-  ) +
+  geom_beeswarm(size = 0.01, cex = 0.18, side = 1L) +
   facet_wrap(~ factor(sex, levels = sexes)) +
   scale_colour_continuous_divergingx(
     palette = "Zissou",
