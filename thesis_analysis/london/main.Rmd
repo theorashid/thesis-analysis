@@ -1,0 +1,289 @@
+---
+title: "london"
+author: "Theo Rashid"
+date: "23/03/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## london lsoa
+
+```{r imports}
+library(here)
+library(tidyverse)
+library(abind)
+library(cowplot)
+library(colorspace)
+library(scales)
+library(geojsonsf)
+library(sf)
+library(ggridges)
+
+source(here("thesis_analysis", "theme_thesis.R"))
+source(here("thesis_analysis", "palette_thesis.R"))
+source(here("thesis_analysis", "skeletons.R"))
+```
+
+## data
+
+```{r data}
+args <- lst(region = "LSOA", model = "bb_nested_as_at_st")
+
+sexes <- c("women", "men")
+
+e0 <- abind(
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_female_",
+        args$model,
+        "_e0.rds"
+      )
+    )
+  ),
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_male_",
+        args$model,
+        "_e0.rds"
+      )
+    )
+  ),
+  along = 0,
+  new.names = sexes
+)
+
+dimnames(e0) <- list(
+  sex = dimnames(e0)[[1]],
+  year = dimnames(e0)[[2]],
+  LSOA2011 = dimnames(e0)[[3]],
+  sample = dimnames(e0)[[4]]
+)
+
+e0_global <- abind(
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(args$region, "_GLOBAL_female_nested_as_at_e0.rds")
+    )
+  ),
+  read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(args$region, "_GLOBAL_male_nested_as_at_e0.rds")
+    )
+  ),
+  along = 0,
+  new.names = sexes
+) |>
+  apply(
+    MARGIN = c(1, 2),
+    FUN = median
+  ) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(`e0` = Freq, sex = Var1, year = Var2) |>
+  mutate(year = as.integer(year)) |>
+  arrange()
+```
+
+```{r covariate and shape data}
+imd <- bind_rows(
+  read_csv(here("data", "covariates", "IMD_LSOA2011_2004.csv")) |> mutate(year = 2002),
+  read_csv(here("data", "covariates", "IMD_LSOA2011_2019.csv")) |> mutate(year = 2019)
+) |>
+  group_by(year) |>
+  mutate(
+    `Poverty` = rank(`income score`),
+    `Unemployment` = rank(`employment score`),
+    `Education` = rank(`education, skills and training score`)
+  ) |>
+  select(LSOA2011, year, Poverty, Unemployment, Education)
+
+shape <- geojson_sf(here("data", "covariates", "LSOA2011_LDN_BGC.geojson"))
+
+lookup <- read_csv(
+  here(
+    "data",
+    "covariates",
+    "LSOA_MSOA_LAD_GOR_CTRY_lookup.csv"
+  )
+) |>
+  select(LSOA2011, MSOA2011, LAD2020, LAD2020NM) |>
+  distinct() |>
+  arrange(LSOA2011) |>
+  filter(LSOA2011 %in% (shape |> pull(LSOA2011)))
+
+n_lsoa <- length(unique(lookup$LSOA2011))
+```
+
+```{r calculate median e0 in over time}
+median_e0 <- apply(
+  X = e0,
+  MARGIN = c(1, 2, 3),
+  FUN = median
+) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(`e0` = Freq) |>
+  mutate(year = as.integer(year)) |>
+  arrange()
+```
+
+```{r calculate median e0 change 2002-2019}
+median_e0_change <- apply(
+  X = e0[, "2019", , ] - e0[, "2002", , ],
+  MARGIN = c(1, 2),
+  FUN = median
+) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(de0 = Freq)
+```
+
+## maps
+
+```{r map level 2019}
+scale_sex <- list(
+  women = scale_fill_continuous_divergingx(
+    palette = "RdBu",
+    mid = e0_global |>
+      filter(sex == "women") |>
+      filter(year == 2019) |>
+      pull(e0),
+    p1 = 0.8,
+    p2 = 0.8,
+    p3 = 0.8,
+    p4 = 0.8,
+    name = "Life expectancy, women",
+    breaks = breaks_pretty(n = 5)
+  ),
+  men = scale_fill_continuous_divergingx(
+    palette = "RdBu",
+    mid = e0_global |>
+      filter(sex == "men") |>
+      filter(year == 2019) |>
+      pull(e0),
+    p1 = 0.8,
+    p2 = 0.8,
+    p3 = 0.8,
+    p4 = 0.8,
+    name = "Life expectancy, men",
+    breaks = breaks_pretty(n = 5)
+  )
+)
+
+maps <- list()
+ridges <- list()
+
+for (s in sexes) {
+  plot_df <- shape |>
+    left_join(lookup) |>
+    left_join(
+      median_e0 |>
+        filter(sex == s) |>
+        filter(year == 2019)
+    )
+
+  maps[[s]] <- plot_df |>
+    ggplot(aes(fill = `e0`)) +
+    map_skeleton_msoa +
+    scale_sex[[s]]
+
+  ridges[[s]] <- median_e0 |>
+    filter(sex == s) |>
+    filter(year == 2019) |>
+    ggplot(aes(x = e0, y = 1, fill = after_stat(x))) +
+    ridge_skeleton +
+    scale_sex[[s]]
+}
+
+grid <- plot_grid(maps[["women"]], maps[["men"]])
+
+grid <- ggdraw(grid) +
+  draw_plot(ridges[["women"]], -0.42, -0.24, scale = 0.11) +
+  draw_plot(ridges[["men"]], 0.08, -0.24, scale = 0.11)
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "london",
+    "figures",
+    "map_level.pdf"
+  ),
+  grid
+)
+```
+
+```{r map change 2002-2019}
+scale_change <- scale_fill_continuous_divergingx(
+  palette = "Geyser",
+  rev = TRUE,
+  mid = 0.0,
+  l3 = 40,
+  p3 = 0.3,
+  p4 = 0.3,
+  name = "Life expectancy change from 2002-19 (years)",
+  breaks = breaks_pretty(n = 8)
+)
+
+maps <- list()
+for (s in sexes) {
+  plot_df <- shape |>
+    left_join(lookup) |>
+    left_join(median_e0_change |> filter(sex == s))
+
+  maps[[s]] <- plot_df |>
+    ggplot(aes(fill = `de0`)) +
+    map_skeleton_msoa +
+    scale_change
+}
+
+grid <- plot_grid(
+  maps[["women"]], maps[["men"]],
+  labels = sexes,
+  label_x = 0.5,
+  label_y = 0.85,
+  label_size = 6
+)
+
+legend <- get_legend(
+  maps[["women"]] +
+    theme(
+      legend.direction = "horizontal",
+      legend.position = "top",
+      legend.key.width = unit(15, units = "pt"),
+      legend.key.height = unit(5, units = "pt"),
+      legend.title = element_text(
+        size = 3,
+        face = "bold"
+      ),
+      legend.text = element_text(size = 3)
+    ) +
+    guides(fill = guide_colourbar(title.position = "top"))
+)
+
+grid <- ggdraw(grid) + draw_grob(legend, 0, 0.25)
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "london",
+    "figures",
+    "map_change.pdf"
+  ),
+  grid
+)
+```
