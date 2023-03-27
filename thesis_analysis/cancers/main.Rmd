@@ -432,7 +432,7 @@ p_female <- median_q |>
     hjust = 0,
     size = 1.5
   ) +
-  labs(caption = paste("Probability of dying between birth and 80 in 2019,", "women")) +
+  labs(caption = "Probability of dying between birth and 80 in 2019, women") +
   theme_thesis()
 
 p_male <- median_q |>
@@ -458,7 +458,7 @@ p_male <- median_q |>
     hjust = 0,
     size = 1.5
   ) +
-  labs(caption = paste("Probability of dying between birth and 80 in 2019,", "men")) +
+  labs(caption = "Probability of dying between birth and 80 in 2019, men") +
   theme_thesis() +
   theme(legend.position = "none")
 

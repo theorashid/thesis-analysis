@@ -21,6 +21,7 @@ library(scales)
 library(geojsonsf)
 library(sf)
 library(ggridges)
+library(geofacet)
 
 source(here("thesis_analysis", "theme_thesis.R"))
 source(here("thesis_analysis", "palette_thesis.R"))
@@ -97,20 +98,20 @@ e0_global <- abind(
   rename(`e0` = Freq, sex = Var1, year = Var2) |>
   mutate(year = as.integer(year)) |>
   arrange()
+
+e0_LAD <- read_csv(
+  here(
+    "data",
+    "life_table",
+    "LSOA_LAD_e0_inequality.csv"
+  )
+) |>
+  mutate(sex = recode(sex, Male = "men", Female = "women")) |>
+  rename(year = YEAR)
 ```
 
 ```{r covariate and shape data}
-imd <- bind_rows(
-  read_csv(here("data", "covariates", "IMD_LSOA2011_2004.csv")) |> mutate(year = 2002),
-  read_csv(here("data", "covariates", "IMD_LSOA2011_2019.csv")) |> mutate(year = 2019)
-) |>
-  group_by(year) |>
-  mutate(
-    `Poverty` = rank(`income score`),
-    `Unemployment` = rank(`employment score`),
-    `Education` = rank(`education, skills and training score`)
-  ) |>
-  select(LSOA2011, year, Poverty, Unemployment, Education)
+london_change <- read_csv(here("data", "covariates", "london_change_variables.csv"))
 
 shape <- geojson_sf(here("data", "covariates", "LSOA2011_LDN_BGC.geojson"))
 
@@ -283,6 +284,241 @@ save_plot(
     "london",
     "figures",
     "map_change.pdf"
+  ),
+  grid
+)
+```
+
+## ridges
+
+```{r ridges}
+scale_sex <- list(
+  women = scale_fill_manual(
+    values = c(desaturate(sex_pal[2], amount = 0.5), sex_pal[2]),
+    name = ""
+  ),
+  men = scale_fill_manual(
+    values = c(desaturate(sex_pal[1], amount = 0.5), sex_pal[1]),
+    name = ""
+  )
+)
+
+for (s in sexes) {
+  district_ridge_order <- median_e0 |>
+    left_join(lookup) |>
+    filter(sex == s) |>
+    filter(year == 2002) |>
+    group_by(LAD2020NM) |>
+    summarise(district_median_e0 = median(e0)) |>
+    arrange(district_median_e0) |>
+    pull(LAD2020NM)
+
+  p_level <- median_e0 |>
+    left_join(lookup) |>
+    filter(sex == s) |>
+    filter(year == 2002 | year == 2019) |>
+    mutate(LAD2020NM = factor(LAD2020NM, levels = district_ridge_order)) |>
+    ggplot(aes(x = e0, y = LAD2020NM, group = interaction(LAD2020, year), fill = factor(year))) +
+    stat_density_ridges(colour = "#cccccc", size = 0.1, alpha = 0.7) +
+    scale_sex[[s]] +
+    scale_y_discrete(expand = c(0, 0, 0.05, 0)) +
+    labs(x = "Life expectancy (years)", y = "") +
+    theme_thesis() +
+    theme(
+      legend.position = c(0.9, 0.1),
+      legend.key.size = unit(5, "pt")
+    )
+
+  p_change <- median_e0_change |>
+    left_join(lookup) |>
+    filter(sex == s) |>
+    mutate(LAD2020NM = factor(LAD2020NM, levels = district_ridge_order)) |>
+    ggplot(aes(x = de0, y = LAD2020NM, group = LAD2020)) +
+    stat_density_ridges(colour = "#cccccc", fill = "#cccccc", size = 0.1, alpha = 0.7) +
+    scale_y_discrete(expand = c(0, 0, 0.05, 0)) +
+    labs(x = "Change in expectancy (years)", y = "") +
+    theme_thesis() +
+    theme(legend.position = "none")
+
+  grid <- plot_grid(p_level, p_change, rel_widths = c(1.4, 1))
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "london",
+      "figures",
+      str_c(s, "_ridges", ".pdf")
+    ),
+    grid
+  )
+}
+```
+
+## geofacet
+
+```{r geofacet}
+scale_sex <- list(
+  women = scale_colour_gradient(
+    low = desaturate(sex_pal[2], amount = 1.0),
+    high = sex_pal[2],
+    name = "",
+    breaks = c(2002, 2010, 2019)
+  ),
+  men = scale_colour_gradient(
+    low = desaturate(sex_pal[1], amount = 1.0),
+    high = sex_pal[1],
+    name = "",
+    breaks = c(2002, 2010, 2019)
+  )
+)
+
+for (s in sexes) {
+  p <- e0_LAD |>
+    ggplot(aes(x = e0med, y = inequalitymed)) +
+    geom_path(
+      aes(group = LAD2020NM),
+      data = e0_LAD |>
+        filter(sex == s) |>
+        left_join(lookup |> select(-c(LSOA2011, MSOA2011)) |> distinct()) |> select(-LAD2020),
+      colour = "grey80",
+      size = 0.1
+    ) +
+    geom_path(
+      aes(group = LAD2020, colour = year),
+      data = e0_LAD |> filter(sex == s),
+      size = 0.3
+    ) +
+    facet_geo(~LAD2020, grid = "gb_london_boroughs_grid", label = "name") +
+    scale_sex[[s]] +
+    labs(
+      x = "District life expectancy (years)",
+      y = "Life expectancy inequality (years)"
+    ) +
+    theme_thesis() +
+    theme(
+      legend.position = c(0.87, 0.04),
+      legend.direction = "horizontal",
+      legend.key.width = unit(15, units = "pt"),
+      legend.key.height = unit(5, units = "pt"),
+      legend.text = element_text(size = 5),
+      strip.text = element_text(size = 4)
+    )
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "london",
+      "figures",
+      str_c(s, "_geofacet", ".pdf")
+    ),
+    p
+  )
+}
+```
+
+## correlation with covariates
+
+```{r correlation plot data}
+correlations <- list()
+for (s in sexes) {
+  correlation <- list()
+  for (decile in 1:10) {
+    correlation[[decile]] <- cor(
+      london_change |>
+        filter(sex == s) |>
+        filter(decile_house_price_2002 == decile) |>
+        select(-c(sex, decile_house_price_2002)),
+      method = "spearman"
+    )["de0", ]
+  }
+
+  correlation <- bind_rows(correlation) |>
+    select(-de0) |>
+    rename(
+      `House price` = d_med_OA_log_house_price,
+      `Poverty` = d_income_rank,
+      `Unemployment` = d_employment_rank,
+      `Education deprivation` = d_education_rank,
+      `Population turnover` = churn,
+      `Share of population, 0-14` = d_pop_0_14_rel,
+      `Share of population, 15-29` = d_pop_15_29_rel,
+      `Share of population, 30-69` = d_pop_30_69_rel,
+      `Share of population, 70+` = d_pop_70_plus_rel
+    ) |>
+    rowid_to_column(var = "Decile")
+
+  correlation <- correlation |>
+    pivot_longer(cols = -one_of("Decile")) |>
+    mutate(
+      name_factor = factor(
+        name,
+        levels = c(
+          "Education deprivation",
+          "Unemployment",
+          "Poverty",
+          "Share of population, 70+",
+          "Share of population, 30-69",
+          "Share of population, 15-29",
+          "Share of population, 0-14",
+          "Population turnover",
+          "House price"
+        )
+      ),
+      decile_factor = factor(
+        str_c("Decile\n", Decile),
+        levels = str_c("Decile\n", 1:10)
+      )
+    )
+
+  correlations[[s]] <- correlation
+}
+```
+
+```{r correlation plot}
+correlation_plots <- list()
+for (s in sexes) {
+  correlation_plots[[s]] <- ggplot(
+    correlations[[s]],
+    aes(
+      y = name_factor,
+      x = decile_factor,
+      fill = value,
+      label = round(value, 2)
+    )
+  ) +
+    geom_tile() +
+    geom_text(size = 1.5) +
+    scale_x_discrete(position = "top") +
+    labs(
+      x = "",
+      y = "Change in variable, 2002-2019",
+      caption = s
+    ) +
+    theme_thesis() +
+    pair_skeleton
+}
+
+legend <- get_legend(correlation_plots[["women"]])
+grid <- plot_grid(
+  correlation_plots[["women"]] + theme(legend.position = "none"),
+  correlation_plots[["men"]] +
+    theme(
+      legend.position = "none",
+      axis.text.y = element_blank(),
+      axis.title.y = element_blank(),
+      axis.ticks.y = element_blank()
+    ),
+  rel_widths = c(1.4, 1)
+)
+
+grid <- plot_grid(legend, grid, ncol = 1, rel_heights = c(.1, 1))
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "london",
+    "figures",
+    "correlation.pdf"
   ),
   grid
 )

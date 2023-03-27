@@ -96,6 +96,16 @@
       "Hash": "e9c08b94391e9f3f97355841229124f2",
       "Requirements": []
     },
+    "RcppArmadillo": {
+      "Package": "RcppArmadillo",
+      "Version": "0.12.0.1.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "dee7cfd76b4c78bab84e09b74b6d471f",
+      "Requirements": [
+        "Rcpp"
+      ]
+    },
     "abind": {
       "Package": "abind",
       "Version": "1.4-5",
@@ -529,6 +539,38 @@
       "Hash": "15e9634c0fcd294799e9b2e929ed1b86",
       "Requirements": []
     },
+    "geofacet": {
+      "Package": "geofacet",
+      "Version": "0.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "e3f2183dc9534eb3185758286e22244f",
+      "Requirements": [
+        "geogrid",
+        "ggplot2",
+        "ggrepel",
+        "gridExtra",
+        "gtable",
+        "imguR",
+        "rnaturalearth",
+        "sf",
+        "sp"
+      ]
+    },
+    "geogrid": {
+      "Package": "geogrid",
+      "Version": "0.1.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "658b19da952887d2b292e1797b5f2dca",
+      "Requirements": [
+        "Rcpp",
+        "RcppArmadillo",
+        "rgeos",
+        "sf",
+        "sp"
+      ]
+    },
     "geojsonsf": {
       "Package": "geojsonsf",
       "Version": "2.0.3",
@@ -675,6 +717,16 @@
       "Hash": "c6b1256546a22b4b9f4fae3ba5117b97",
       "Requirements": []
     },
+    "gridExtra": {
+      "Package": "gridExtra",
+      "Version": "2.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "7d7f283939f563670a697165b2cf5560",
+      "Requirements": [
+        "gtable"
+      ]
+    },
     "gtable": {
       "Package": "gtable",
       "Version": "0.3.1",
@@ -801,12 +853,32 @@
         "rlang"
       ]
     },
+    "imguR": {
+      "Package": "imguR",
+      "Version": "1.0.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "f6deba2c922290384e51a5176dea7ea8",
+      "Requirements": [
+        "httr",
+        "jpeg",
+        "png"
+      ]
+    },
     "isoband": {
       "Package": "isoband",
       "Version": "0.2.6",
       "Source": "Repository",
       "Repository": "CRAN",
       "Hash": "cfdea9dea85c1a973991c8cbe299f4da",
+      "Requirements": []
+    },
+    "jpeg": {
+      "Package": "jpeg",
+      "Version": "0.1-10",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "031a0b683d001a7519202f0628fc0358",
       "Requirements": []
     },
     "jquerylib": {
@@ -1043,6 +1115,14 @@
         "Rcpp"
       ]
     },
+    "png": {
+      "Package": "png",
+      "Version": "0.1-8",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "bd54ba8a0a5faded999a7aab6e46b374",
+      "Requirements": []
+    },
     "prettyunits": {
       "Package": "prettyunits",
       "Version": "1.1.1",
@@ -1221,6 +1301,16 @@
         "plyr"
       ]
     },
+    "rgeos": {
+      "Package": "rgeos",
+      "Version": "0.6-2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "9511acfd44e26cd310b9975f63ac9f72",
+      "Requirements": [
+        "sp"
+      ]
+    },
     "rlang": {
       "Package": "rlang",
       "Version": "1.0.6",
@@ -1246,6 +1336,19 @@
         "tinytex",
         "xfun",
         "yaml"
+      ]
+    },
+    "rnaturalearth": {
+      "Package": "rnaturalearth",
+      "Version": "0.3.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "c97d05220a4112f461eb940f2633d091",
+      "Requirements": [
+        "httr",
+        "jsonlite",
+        "sf",
+        "sp"
       ]
     },
     "rprojroot": {
@@ -1398,6 +1501,16 @@
       "Repository": "CRAN",
       "Hash": "5f5a7629f956619d519205ec475fe647",
       "Requirements": []
+    },
+    "sp": {
+      "Package": "sp",
+      "Version": "1.6-0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Hash": "6674e075a078d9c3bde8ba800367347c",
+      "Requirements": [
+        "lattice"
+      ]
     },
     "stringi": {
       "Package": "stringi",
