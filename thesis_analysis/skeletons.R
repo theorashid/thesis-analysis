@@ -1,3 +1,8 @@
+library(tidyverse)
+library(scales)
+library(ggbeeswarm)
+library(sf)
+
 map_skeleton <- list(
   geom_sf(colour = "white", linewidth = 0.01),
   theme_void(),
@@ -28,6 +33,43 @@ ridge_skeleton <- list(
   guides(
     fill = guide_colorbar(
       title.position = "bottom",
+      title.hjust = 0
+    )
+  )
+)
+
+jitter_change_skeleton <- list(
+  geom_hline(yintercept = 0, linewidth = 0.05, alpha = 0.5),
+  geom_beeswarm(size = 0.01, cex = 0.18, side = 1L),
+  scale_colour_continuous_divergingx(
+    palette = "Zissou",
+    name = "Percentile of life expectancy at the start of each time period",
+    mid = 0.5,
+    rev = TRUE,
+    limits = c(0, 1),
+    labels = percent
+  ),
+  labs(
+    x = "Time period",
+    y = "Life expectancy change during period (years)"
+  ),
+  theme_thesis(),
+  theme(
+    axis.ticks.x = element_blank(),
+    axis.line = element_blank(),
+    panel.border = element_blank(),
+    legend.direction = "horizontal",
+    legend.position = "bottom",
+    legend.key.width = unit(30, units = "pt"),
+    legend.key.height = unit(5, units = "pt"),
+    legend.title = element_text(
+      size = 5,
+      face = "bold"
+    )
+  ),
+  guides(
+    colour = guide_colourbar(
+      title.position = "top",
       title.hjust = 0
     )
   )

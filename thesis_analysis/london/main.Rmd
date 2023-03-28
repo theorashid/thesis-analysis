@@ -416,6 +416,68 @@ for (s in sexes) {
 }
 ```
 
+## jitter change between periods
+
+```{r calculate change 2002, 2006, 2010, 2014, 2019}
+median_e0_changes <- apply(
+  X = e0[, c("2002", "2006", "2010", "2014", "2019"), , ],
+  MARGIN = c(1, 3, 4),
+  FUN = diff
+) |>
+  apply(
+    MARGIN = c(1, 2, 3),
+    FUN = median
+  ) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(year = Var1, de0 = Freq) |>
+  mutate(
+    period = recode(
+      year,
+      `2006` = "2002-2006",
+      `2010` = "2006-2010",
+      `2014` = "2010-2014",
+      `2019` = "2014-2019"
+    )
+  ) |>
+  left_join(
+    median_e0 |>
+      filter(year == 2002 | year == 2006 | year == 2010 | year == 2014) |>
+      group_by(sex, year) |>
+      mutate(percentile = ntile(e0, 100) / 100) |>
+      ungroup() |>
+      mutate(
+        period = recode(
+          year,
+          `2002` = "2002-2006",
+          `2006` = "2006-2010",
+          `2010` = "2010-2014",
+          `2014` = "2014-2019"
+        )
+      ) |>
+      select(-e0, -year)
+  )
+```
+
+```{r e0 jitter change plot}
+p <- ggplot(
+  data = median_e0_changes,
+  aes(x = period, y = de0, colour = percentile)
+) +
+  jitter_change_skeleton +
+  facet_wrap(~ factor(sex, levels = sexes))
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "london",
+    "figures",
+    "change.pdf"
+  ),
+  p
+)
+```
+
 ## correlation with covariates
 
 ```{r correlation plot data}
@@ -465,8 +527,8 @@ for (s in sexes) {
         )
       ),
       decile_factor = factor(
-        str_c("Decile\n", Decile),
-        levels = str_c("Decile\n", 1:10)
+        str_c("D", Decile),
+        levels = str_c("D", 1:10)
       )
     )
 
