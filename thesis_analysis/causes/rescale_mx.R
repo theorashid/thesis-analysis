@@ -29,7 +29,7 @@ death_rates_total <- tidync(
 ) |> hyper_array(force = TRUE)
 death_rates_total <- death_rates_total$`__xarray_dataarray_variable__`
 
-scale_factor <- death_rates_total / apply(death_rates, MARGIN = c(1, 2, 3, 4) , FUN = sum)
+scale_factor <- death_rates_total / apply(death_rates, MARGIN = c(1, 2, 3, 4), FUN = sum)
 scaled_death_rates <- sweep(death_rates, c(1, 2, 3, 4), scale_factor, "*")
 
 dimnames(scaled_death_rates) <- list(
