@@ -180,7 +180,8 @@ PeriodLifeTable <- function(age, mx, ax, sex, check.conv = FALSE) {
     lx[age == 0] <- 100000
     lx[age == 1] <- lx[age == 0] * px[age == 0]
     lx[age == 5] <- lx[age == 1] * px[age == 1]
-    for (k in seq(10, 85, 5)) { # the rest have bin width 5
+    for (k in seq(10, 85, 5)) {
+      # the rest have bin width 5
       lx[age == k] <- lx[age == k - 5] * px[age == k - 5]
     }
     dx <- lx * qx
@@ -215,6 +216,6 @@ PeriodLifeTable <- function(age, mx, ax, sex, check.conv = FALSE) {
   Tx[age == 1] <- Tx[age == 5] + Lx[age == 1]
   Tx[age == 0] <- Tx[age == 1] + Lx[age == 0]
   ex <- Tx / lx
-  
+
   return(data.frame(ax = ax, mx = mx, qx = qx, ex = ex, Tx = Tx, Lx = Lx, lx = lx, age = age))
 }

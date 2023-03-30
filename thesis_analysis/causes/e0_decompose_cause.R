@@ -19,7 +19,7 @@ death_rates <- read_rds(
   here(
     "data",
     "death_rates",
-    str_c(args$region,"_", args$sex, "_", args$model, "_causes_scaled.rds")
+    str_c(args$region, "_", args$sex, "_", args$model, "_causes_scaled.rds")
   )
 )
 
