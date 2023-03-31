@@ -14,3 +14,11 @@ sex_pal <- c(
   "#21C2AB",
   "#8724F4"
 )
+
+cause_group_pal <- c(
+  "#CCCCCC2D",
+  "#A010109B",
+  "#D2E6FFBD",
+  "#B8ABC5A5",
+  "#FFF5E8"
+)
