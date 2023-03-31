@@ -190,7 +190,7 @@ cause_names <- tribble(
   "Lower respiratory infections", "Lower respiratory infections", "Lower respiratory infections", "GBD Group 1", "both",
   "All other infections maternal perinatal and nutritional conditions",
   "All other infections, maternal, perinatal and nutritional conditions",
-  "All other group 1",
+  "All other IMPN",
   "GBD Group 1", "both",
   "External causes", "External causes", "Injuries", "Injuries", "both"
 )
@@ -218,7 +218,7 @@ p <- tm_df |>
     vSize = "deaths",
     vColor = "type",
     palette = cause_group_pal,
-    fontsize.labels = 10,
+    fontsize.labels = 8,
     fontsize.title = 0,
     position.legend = "none",
     bg.labels = 0,

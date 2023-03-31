@@ -16,9 +16,9 @@ sex_pal <- c(
 )
 
 cause_group_pal <- c(
-  "#CCCCCC2D",
-  "#A010109B",
-  "#D2E6FFBD",
-  "#B8ABC5A5",
-  "#FFF5E8"
+  "#dfd9d490",
+  "#f04e5d90",
+  "#ffae3590",
+  "#8deaa190",
+  "#96d2e590"
 )
