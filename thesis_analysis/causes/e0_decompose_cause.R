@@ -61,7 +61,7 @@ Dx_cause <- sweep(prop, c(1, 2), dec[, , "Dx"], "*")
 Dx_cause <- apply(Dx_cause, MARGIN = c(1, 3), sum)
 
 write_rds(
-  death_rates,
+  Dx_cause,
   here(
     "data",
     "life_table",
