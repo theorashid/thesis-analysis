@@ -207,10 +207,10 @@ p <- tm_df |>
     lab = str_c(
       cause_lab,
       "\n",
-      format(deaths, big.mark = ","),
-      "\n(",
-      format(round(deaths_prop, 1), nsmall = 1),
-      "%)"
+      format(deaths, big.mark = ",")
+      # " (",
+      # format(round(deaths_prop, 1), nsmall = 1),
+      # "%)"
     )
   ) |>
   treemap(
@@ -219,7 +219,7 @@ p <- tm_df |>
     vSize = "deaths",
     vColor = "type",
     palette = cause_group_pal,
-    fontsize.labels = 8,
+    fontsize.labels = 10,
     fontsize.title = 0,
     position.legend = "none",
     bg.labels = 0,
@@ -490,76 +490,5 @@ for (s in sexes) {
       }
     }
   }
-}
-```
-
-```{r decomposition change 2002-10 2010-19}
-for (s in sexes) {
-  if (s == "female") id <- 2 else id <- 1
-  e0_decompose_200210 <- read_rds(
-    here(
-      "data",
-      "life_table",
-      str_c(
-        args$region,
-        "_",
-        s,
-        "_",
-        args$model,
-        "_e0_decompose20022010.rds"
-      )
-    )
-  ) |>
-    as.data.frame.table(stringsAsFactors = FALSE) |>
-    as_tibble() |>
-    rename(Dx = Freq) |>
-    mutate(period = "2002-10") |>
-    group_by(LAD) |>
-    mutate(de0 = sum(Dx)) |>
-    ungroup() |>
-    group_by(cause) |>
-    mutate(rank_de0 = rank(de0))
-
-  e0_decompose_201019 <- read_rds(
-    here(
-      "data",
-      "life_table",
-      str_c(
-        args$region,
-        "_",
-        s,
-        "_",
-        args$model,
-        "_e0_decompose20102019.rds"
-      )
-    )
-  ) |>
-    as.data.frame.table(stringsAsFactors = FALSE) |>
-    as_tibble() |>
-    rename(Dx = Freq) |>
-    mutate(period = "2010-19") |>
-    group_by(LAD) |>
-    mutate(de0 = sum(Dx)) |>
-    ungroup() |>
-    group_by(cause) |>
-    mutate(rank_de0 = rank(de0))
-
-  p <- e0_decompose_200210 |>
-    bind_rows(e0_decompose_201019) |>
-    ggplot(aes(x = rank_de0, y = Dx, colour = period)) +
-    # geom_point(size = 0.1) +
-    geom_smooth(linewidth = 0.2, se = FALSE) +
-    facet_wrap(~cause, scale = "free_y") +
-    theme_thesis()
-
-  save_plot(
-    here(
-      "thesis_analysis",
-      "causes",
-      "figures",
-      str_c(s, "_decompose_split.pdf")
-    ),
-    p
-  )
 }
 ```
