@@ -101,6 +101,7 @@ cause_q <- lst(
 
 ```{r covariate and shape data}
 shape <- geojson_sf(here("data", "covariates", "LAD2020_ENG_BGC.geojson"))
+n_lad <- length(unique(shape$LAD2020))
 ```
 
 ```{r calculate median e0 in over time}
@@ -388,6 +389,7 @@ for (s in sexes) {
         p_e0_change <- e0_change |>
           mutate(LAD = factor(LAD, levels = e0_change$LAD)) |>
           ggplot(aes(x = de0, y = LAD)) +
+          geom_vline(xintercept = 0, linewidth = 0.1, colour = "#403f3f9b") +
           geom_segment(aes(yend = LAD, x = 0, xend = de0), linewidth = 0.1, colour = "#CCCCCC", alpha = 0.4) +
           geom_point(color = sex_pal[id], size = 0.1) +
           labs(x = str_c("Life expectancy change\n", y1, "-", y2), y = "") +
@@ -412,6 +414,10 @@ for (s in sexes) {
             palette = "TealRose",
             rev = TRUE,
             mid = 0,
+            p1 = 1.8,
+            p2 = 0.7,
+            p3 = 1.8,
+            p4 = 0.7,
             name = "Contribution to change\n in life expectancy (years)"
           ) +
           labs(x = "", y = "") +
@@ -441,13 +447,13 @@ for (s in sexes) {
           as_tibble() |>
           rename(Dx = Freq) |>
           group_by(cause) |>
-          summarise(sum_Dx = sum(Dx)) |>
+          summarise(sum_Dx = sum(Dx) / n_lad) |>
           left_join(cause_names) |>
           mutate(cause_lab = factor(cause_lab, levels = cause_names$cause_lab)) |>
           ggplot(aes(x = cause_lab, y = sum_Dx, fill = ifelse(sum_Dx > 0, "+ve", "-ve"))) +
           geom_bar(stat = "identity", alpha = 0.4, linewidth = NA) +
           scale_fill_manual(values = c("darkred", "darkgreen"), name = "") +
-          labs(x = "", y = "Total contribution across districts (years)") +
+          labs(x = "", y = "Average contribution across districts (years)") +
           theme_thesis() +
           theme(
             axis.ticks.x = element_blank(),
@@ -484,5 +490,76 @@ for (s in sexes) {
       }
     }
   }
+}
+```
+
+```{r decomposition change 2002-10 2010-19}
+for (s in sexes) {
+  if (s == "female") id <- 2 else id <- 1
+  e0_decompose_200210 <- read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_",
+        s,
+        "_",
+        args$model,
+        "_e0_decompose20022010.rds"
+      )
+    )
+  ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(Dx = Freq) |>
+    mutate(period = "2002-10") |>
+    group_by(LAD) |>
+    mutate(de0 = sum(Dx)) |>
+    ungroup() |>
+    group_by(cause) |>
+    mutate(rank_de0 = rank(de0))
+
+  e0_decompose_201019 <- read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_",
+        s,
+        "_",
+        args$model,
+        "_e0_decompose20102019.rds"
+      )
+    )
+  ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(Dx = Freq) |>
+    mutate(period = "2010-19") |>
+    group_by(LAD) |>
+    mutate(de0 = sum(Dx)) |>
+    ungroup() |>
+    group_by(cause) |>
+    mutate(rank_de0 = rank(de0))
+
+  p <- e0_decompose_200210 |>
+    bind_rows(e0_decompose_201019) |>
+    ggplot(aes(x = rank_de0, y = Dx, colour = period)) +
+    # geom_point(size = 0.1) +
+    geom_smooth(linewidth = 0.2, se = FALSE) +
+    facet_wrap(~cause, scale = "free_y") +
+    theme_thesis()
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "causes",
+      "figures",
+      str_c(s, "_decompose_split.pdf")
+    ),
+    p
+  )
 }
 ```
