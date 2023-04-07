@@ -161,6 +161,24 @@ imd <- bind_rows(
   ) |>
   select(MSOA2011, year, Poverty, Unemployment, Education)
 
+churn <- read_csv(here("data", "covariates", "cdrc_chrun_lsoa.csv")) |>
+  mutate(
+    chn2002_2019 = 1 - (1 - chn2002) / (1 - chn2019),
+    LSOA2011 = area
+  ) |>
+  left_join(
+    read_csv(
+      here(
+        "data",
+        "covariates",
+        "LSOA_MSOA_LAD_GOR_CTRY_lookup.csv"
+      )
+    )
+  ) |>
+  filter(!is.na(MSOA2011)) |>
+  group_by(MSOA2011) |>
+  summarise(chn2002_2019 = mean(chn2002_2019))
+
 lookup <- read_csv(
   here(
     "data",
@@ -1020,4 +1038,13 @@ save_plot(
   ),
   p
 )
+```
+
+## migration
+
+```{r migration}
+migration <- median_e0_change |> left_join(churn)
+
+mod <- lm(de0 ~ chn2002_2019, data = migration |> filter(sex == "men"))
+summary(mod)
 ```
