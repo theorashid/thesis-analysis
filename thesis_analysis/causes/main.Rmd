@@ -166,6 +166,60 @@ for (s in c("male", "female")) {
 }
 ```
 
+```{r quantile q}
+quantile_q <- lst()
+for (s in c("male", "female")) {
+  quantile_q[[s]] <- apply(
+    X = cause_q[[s]][c("2002", "2019"), , , ],
+    MARGIN = c(1, 2, 4),
+    FUN = quantile,
+    p = c(0.025, 0.5, 0.975)
+  ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(quantile = Var1, `80q0` = Freq) |>
+    arrange() |>
+    pivot_wider(names_from = quantile, values_from = `80q0`)
+}
+```
+
+```{r probability of death range}
+quantile_q |>
+  bind_rows(.id = "sex") |>
+  filter(year == 2019) |>
+  filter(sex == "male") |>
+  filter(cause == "All other cancers") |>
+  arrange(-`50%`)
+```
+
+```{r inequality probability of death}
+quantile_q |>
+  pluck("female") |>
+  filter(year == 2019) |>
+  group_by(cause) |>
+  summarise(
+    max_min = max(`50%`) / min(`50%`),
+    q90_q10 = quantile(`50%`, 0.9) / quantile(`50%`, 0.1)
+  )
+```
+
+```{r percentage relative changes}
+s <- "female"
+apply(
+  X = (cause_q[[s]]["2019", , , ] - cause_q[[s]]["2002", , , ]) * 100 / cause_q[[s]]["2002", , , ],
+  MARGIN = c(1, 3),
+  FUN = quantile,
+  p = c(0.025, 0.5, 0.975)
+) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(quantile = Var1, `rel_change` = Freq) |>
+  arrange() |>
+  pivot_wider(names_from = quantile, values_from = `rel_change`) |>
+  filter(cause == "Chronic obstructive pulmonary disease") |>
+  arrange(-`50%`)
+```
+
 ## treemap
 
 ```{r cause names}
@@ -418,7 +472,8 @@ for (s in sexes) {
             p2 = 0.7,
             p3 = 1.8,
             p4 = 0.7,
-            name = "Contribution to change\n in life expectancy (years)"
+            name = "Contribution to change\nin life expectancy (years)",
+            breaks = breaks_pretty(n = 5)
           ) +
           labs(x = "", y = "") +
           theme_thesis() +
@@ -442,18 +497,25 @@ for (s in sexes) {
             )
           )
 
-        p_hist <- e0_decompose |>
+        p_jitter <- e0_decompose |>
           as.data.frame.table(stringsAsFactors = FALSE) |>
           as_tibble() |>
           rename(Dx = Freq) |>
-          group_by(cause) |>
-          summarise(sum_Dx = sum(Dx) / n_lad) |>
           left_join(cause_names) |>
           mutate(cause_lab = factor(cause_lab, levels = cause_names$cause_lab)) |>
-          ggplot(aes(x = cause_lab, y = sum_Dx, fill = ifelse(sum_Dx > 0, "+ve", "-ve"))) +
-          geom_bar(stat = "identity", alpha = 0.4, linewidth = NA) +
-          scale_fill_manual(values = c("darkred", "darkgreen"), name = "") +
-          labs(x = "", y = "Average contribution across districts (years)") +
+          ggplot(aes(x = cause_lab, y = Dx, colour = Dx)) +
+          geom_hline(yintercept = 0, linewidth = 0.1, colour = "#403f3f9b") +
+          geom_jitter(size = 0.1, alpha = 0.4) +
+          scale_colour_continuous_divergingx(
+            palette = "TealRose",
+            rev = TRUE,
+            mid = 0,
+            p1 = 1.8,
+            p2 = 0.7,
+            p3 = 1.8,
+            p4 = 0.7
+          ) +
+          labs(x = "", y = "Contribution to change in life expectancy (years)") +
           theme_thesis() +
           theme(
             axis.ticks.x = element_blank(),
@@ -466,7 +528,7 @@ for (s in sexes) {
         legend <- get_legend(p_decompose)
 
         grid <- plot_grid(
-          NULL, NULL, p_hist,
+          NULL, NULL, p_jitter,
           NULL, NULL, NULL,
           p_e0_change, NULL, p_decompose + theme(legend.position = "none"),
           ncol = 3,
