@@ -554,3 +554,57 @@ for (s in sexes) {
   }
 }
 ```
+
+```{r decomposition data}
+for (s in sexes) {
+  if (s == "female") id <- 2 else id <- 1
+  for (y1 in c(2002, 2010)) {
+    for (y2 in c(2010, 2019)) {
+      if (y1 != y2) {
+        print(str_c(s, " ", y1, "-", y2))
+        e0_decompose <- read_rds(
+          here(
+            "data",
+            "life_table",
+            str_c(
+              args$region,
+              "_",
+              s,
+              "_",
+              args$model,
+              "_e0_decompose",
+              y1,
+              y2,
+              ".rds"
+            )
+          )
+        )
+        print(
+          e0_change <- e0_decompose |>
+            as.data.frame.table(stringsAsFactors = FALSE) |>
+            as_tibble() |>
+            rename(Dx = Freq) |>
+            group_by(LAD) |>
+            summarise(de0 = sum(Dx)) |>
+            arrange(de0)
+        )
+
+        print(
+          e0_decompose |>
+            as.data.frame.table(stringsAsFactors = FALSE) |>
+            as_tibble() |>
+            rename(Dx = Freq) |>
+            group_by(cause) |>
+            summarise(
+              min = min(Dx),
+              max = max(Dx),
+              max_min = max(Dx) - min(Dx),
+              q90_q10 = quantile(Dx, 0.9) - quantile(Dx, 0.1)
+            ) |>
+            arrange(q90_q10)
+        )
+      }
+    }
+  }
+}
+```
