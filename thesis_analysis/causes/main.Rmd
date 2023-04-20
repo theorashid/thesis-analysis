@@ -525,6 +525,14 @@ for (s in sexes) {
             legend.position = "none"
           )
 
+        if (!(y1 == 2002 && y2 == 2019)) {
+          if (s == "female") {
+            p_jitter <- p_jitter + lims(y = c(-1.1, 1.2))
+          } else {
+            p_jitter <- p_jitter + lims(y = c(-1.1, 2.4))
+          }
+        }
+
         legend <- get_legend(p_decompose)
 
         grid <- plot_grid(
@@ -546,7 +554,7 @@ for (s in sexes) {
             str_c(s, "_decompose_", y1, "_", y2, ".pdf")
           ),
           grid,
-          base_height = 6.00,
+          base_height = 7.00,
           base_width = 3.71
         )
       }
