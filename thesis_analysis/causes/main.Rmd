@@ -226,7 +226,7 @@ apply(
 cause_names <- tribble(
   ~cause, ~group, ~cause_lab, ~type, ~which_sex,
   "Trachea bronchus lung cancers", "Trachea, bronchus, lung cancers", "Trachea, bronchus, lung cancers", "cancer", "both",
-  "Colon and rectum cancers", "Colon and rectum cancers", "Colorectal cancers", "cancer", "both",
+  "Colon and rectum cancers", "Colon and rectum cancers", "Colorectal cancer", "cancer", "both",
   "Breast cancer", "Breast cancer", "Breast cancer", "cancer", "female",
   "Ovary cancer", "Ovary cancer", "Ovarian cancer", "cancer", "female",
   "Oesophagus cancer", "Oesophagus cancer", "Oesophageal cancer", "cancer", "male",
@@ -468,8 +468,10 @@ for (s in sexes) {
             palette = "TealRose",
             rev = TRUE,
             mid = 0,
-            p1 = 1.8,
+            p1 = 1.0,
             p2 = 0.7,
+            h1 = 240,
+            l1 = 40,
             p3 = 1.8,
             p4 = 0.7,
             name = "Contribution to change\nin life expectancy (years)",
@@ -510,10 +512,12 @@ for (s in sexes) {
             palette = "TealRose",
             rev = TRUE,
             mid = 0,
-            p1 = 1.8,
+            p1 = 1.0,
             p2 = 0.7,
+            h1 = 240,
+            l1 = 40,
             p3 = 1.8,
-            p4 = 0.7
+            p4 = 0.7,
           ) +
           labs(x = "", y = "Contribution to change in life expectancy (years)") +
           theme_thesis() +
@@ -614,5 +618,152 @@ for (s in sexes) {
       }
     }
   }
+}
+```
+
+```{r decomposition top district}
+for (s in sexes) {
+  if (s == "female") id <- 2 else id <- 1
+  e0_decompose <- read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_",
+        s,
+        "_",
+        args$model,
+        "_e0_decompose_inequality2019",
+        ".rds"
+      )
+    )
+  )
+
+  # contribution to inequality at top district is NaN
+  e0_decompose[is.na(e0_decompose)] <- 0
+
+  e0_diff <- e0_decompose |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(Dx = Freq) |>
+    group_by(LAD) |>
+    summarise(de0 = sum(Dx)) |>
+    arrange(de0)
+
+  p_e0_diff <- e0_diff |>
+    mutate(LAD = factor(LAD, levels = e0_diff$LAD)) |>
+    ggplot(aes(x = de0, y = LAD)) +
+    geom_vline(xintercept = 0, linewidth = 0.1, colour = "#403f3f9b") +
+    geom_segment(aes(yend = LAD, x = 0, xend = de0), linewidth = 0.1, colour = "#CCCCCC", alpha = 0.4) +
+    geom_point(color = sex_pal[id], size = 0.1) +
+    labs(x = str_c("Life expectancy difference\n", "in 2019"), y = "") +
+    theme_thesis() +
+    theme(
+      axis.title.x = element_text(size = 4, vjust = +40),
+      axis.ticks.y = element_blank(),
+      axis.text.y = element_blank(),
+      axis.line.y = element_blank()
+    )
+
+  p_decompose <- e0_decompose |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(Dx = Freq) |>
+    mutate(LAD = factor(LAD, levels = e0_diff$LAD)) |>
+    left_join(cause_names) |>
+    mutate(cause_lab = factor(str_wrap(cause_lab, 18), levels = str_wrap(cause_names$cause_lab, 18))) |>
+    ggplot(aes(x = cause_lab, y = LAD, fill = Dx)) +
+    geom_tile(colour = NA) +
+    scale_fill_continuous_divergingx(
+      palette = "TealRose",
+      rev = TRUE,
+      mid = 0,
+      p1 = 1.0,
+      p2 = 0.7,
+      h1 = 240,
+      l1 = 40,
+      p3 = 1.8,
+      p4 = 0.7,
+      name = "Contribution to\nlife expectancy inequality (years)",
+      breaks = breaks_pretty(n = 5)
+    ) +
+    labs(x = "", y = "") +
+    theme_thesis() +
+    theme(
+      axis.ticks.y = element_blank(),
+      axis.text.y = element_blank(),
+      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+      legend.direction = "horizontal",
+      legend.key.width = unit(12, units = "pt"),
+      legend.key.height = unit(4, units = "pt"),
+      legend.text = element_text(size = 4),
+      legend.title = element_text(
+        size = 4,
+        face = "bold"
+      )
+    ) +
+    guides(
+      fill = guide_colorbar(
+        title.position = "top",
+        title.hjust = 0
+      )
+    )
+
+  p_jitter <- e0_decompose |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(Dx = Freq) |>
+    left_join(cause_names) |>
+    mutate(cause_lab = factor(cause_lab, levels = cause_names$cause_lab)) |>
+    ggplot(aes(x = cause_lab, y = Dx, colour = Dx)) +
+    geom_hline(yintercept = 0, linewidth = 0.1, colour = "#403f3f9b") +
+    geom_jitter(size = 0.1, alpha = 0.4) +
+    scale_colour_continuous_divergingx(
+      palette = "TealRose",
+      rev = TRUE,
+      mid = 0,
+      p1 = 1.0,
+      p2 = 0.7,
+      h1 = 240,
+      l1 = 40,
+      p3 = 1.8,
+      p4 = 0.7,
+    ) +
+    labs(x = "", y = "Contribution to life expectancy inequality (years)") +
+    lims(y = c(-0.18, 2.75)) +
+    theme_thesis() +
+    theme(
+      axis.ticks.x = element_blank(),
+      axis.text.x = element_blank(),
+      axis.line.x = element_blank(),
+      axis.title.y = element_text(size = 4),
+      legend.position = "none"
+    )
+
+  legend <- get_legend(p_decompose)
+
+  grid <- plot_grid(
+    NULL, NULL, p_jitter,
+    NULL, NULL, NULL,
+    p_e0_diff, NULL, p_decompose + theme(legend.position = "none"),
+    ncol = 3,
+    rel_heights = c(5, -1.5, 10),
+    rel_widths = c(1.4, -0.2, 4),
+    align = "vh"
+  ) +
+    draw_grob(legend, 0.12, 0.255, 0.1, 1)
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "causes",
+      "figures",
+      str_c(s, "_decompose_inequality_2019", ".pdf")
+    ),
+    grid,
+    base_height = 7.00,
+    base_width = 3.71
+  )
 }
 ```
