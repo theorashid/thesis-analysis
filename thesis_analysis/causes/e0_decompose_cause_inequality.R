@@ -1,4 +1,4 @@
-"Life expectancy decomposition."
+"Life expectancy decomposition compared to top district."
 
 library(here)
 library(tidyverse)
@@ -9,10 +9,9 @@ source(here("thesis_analysis", "causes", "e0_decompose_age.R"))
 
 args <- lst(
   region = "LAD",
-  sex = "female",
+  sex = "male",
   model = "car_as_at",
-  year1 = "2002",
-  year2 = "2019"
+  year = "2019"
 )
 
 death_rates <- read_rds(
@@ -23,37 +22,45 @@ death_rates <- read_rds(
   )
 )
 
-death_rates_total <- apply(death_rates, MARGIN = c(1, 2, 3, 4), FUN = sum) |>
-  apply(MARGIN = c(1, 2, 3), FUN = mean)
+death_rates <- death_rates[args$year, , , , ]
 
-death_rates <- apply(death_rates, MARGIN = c(1, 2, 3, 5), FUN = mean)
+death_rates_total <- apply(death_rates, MARGIN = c(1, 2, 3), FUN = sum) |>
+  apply(MARGIN = c(1, 2), FUN = mean)
+
+death_rates <- apply(death_rates, MARGIN = c(1, 2, 4), FUN = mean)
 
 system.time(
   lt <- apply(
     X = death_rates_total,
-    MARGIN = c(1, 2),
+    MARGIN = 1,
     FUN = PeriodLifeTable,
     age = c(c(0, 1), seq(5, 85, 5)),
     ax = rep(NA, 19),
-    sex = 2
+    sex = 1
   )
 )
 
-lt1 <- lt[args$year1, ]
-lt2 <- lt[args$year2, ]
+lt_max_id <- lapply(lt, \(x) x$ex[1]) |>
+  unlist() |>
+  which.max() |>
+  names()
+
+print(lt_max_id)
+
+lt_max <- lt |> pluck(lt_max_id)
 
 dec <- lapply(
-  seq_along(lt1),
-  \(x)  DecomposeLifeExpDiff(lt1[[x]], lt2[[x]])
+  seq_along(lt),
+  \(x)  DecomposeLifeExpDiff(lt[[x]], lt_max)
 )
 
 dec <- abind(dec, along = 3)
 dec <- aperm(dec, c(3, 1, 2))
 
 prop <- sweep(
-  death_rates[args$year2, , , ] - death_rates[args$year1, , , ],
+  sweep(death_rates, c(2, 3), death_rates[lt_max_id, , ], "-"),
   c(1, 2),
-  death_rates_total[args$year2, , ] - death_rates_total[args$year1, , ],
+  sweep(death_rates_total, 2, death_rates_total[lt_max_id, ], "-"),
   "/"
 )
 
@@ -65,6 +72,6 @@ write_rds(
   here(
     "data",
     "life_table",
-    str_c(args$region, "_", args$sex, "_", args$model, "_e0_decompose", args$year1, args$year2, ".rds")
+    str_c(args$region, "_", args$sex, "_", args$model, "_e0_decompose_inequality", args$year, ".rds")
   ),
 )
