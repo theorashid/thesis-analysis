@@ -649,7 +649,7 @@ for (s in sexes) {
     rename(Dx = Freq) |>
     group_by(LAD) |>
     summarise(de0 = sum(Dx)) |>
-    arrange(de0)
+    arrange(-de0)
 
   p_e0_diff <- e0_diff |>
     mutate(LAD = factor(LAD, levels = e0_diff$LAD)) |>
