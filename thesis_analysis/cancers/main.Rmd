@@ -319,9 +319,13 @@ Maps of 80q0 in 2019 and d80q0 2002-19.
 for (s in c("female", "male")) {
   for (disease in cause_list[[s]]) {
     print(disease)
-    disease_label <- tm_df |>
-      filter(cause == disease) |>
-      pull(cause_lab)
+    if (disease == "All cancers") {
+      disease_label <- disease
+    } else {
+      disease_label <- tm_df |>
+        filter(cause == disease) |>
+        pull(cause_lab)
+    }
 
     map <- shape |>
       left_join(
