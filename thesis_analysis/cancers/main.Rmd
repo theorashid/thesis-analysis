@@ -175,38 +175,51 @@ regions <- c(
 ```{r treemap data}
 tm_df <- bind_rows(
   tribble(
-    ~cause, ~cause_lab, ~deaths,
-    "Trachea bronchus lung cancers", "Trachea, bronchus\n and lung cancers", 218561,
-    "Breast cancer", "Breast", 177528,
-    "Colon and rectum cancers", "Colon and rectum", 111364,
-    "Pancreas cancer", "Pancreas", 62379,
-    "Ovary cancer", "Ovary", 62338,
-    "Lymphomas multiple myeloma", "Lymphomas\n multiple myeloma", 54046,
-    "Oesophagus cancer", "Oesophagus", 36806,
-    "Leukaemia", "Leukaemia", 29465,
-    "Corpus uteri cancer", "Corpus uteri", 29000,
-    "Stomach cancer", "Stomach", 26818,
-    "All other cancers", "All other cancers", 359262,
+    ~cause, ~cause_lab_short, ~cause_lab, ~deaths,
+    "Trachea bronchus lung cancers", "Trachea, bronchus\n and lung", "Trachea, bronchus and lung cancers", 218561,
+    "Breast cancer", "Breast", "Breast cancer", 177528,
+    "Colon and rectum cancers", "Colorectal", "Colorectal cancer", 111364,
+    "Pancreas cancer", "Pancreatic", "Pancreatic cancer", 62379,
+    "Ovary cancer", "Ovarian", "Ovarian cacer", 62338,
+    "Lymphomas multiple myeloma", "Lymphomas,\n multiple myeloma", "Lymphomas, multiple myeloma", 54046,
+    "Oesophagus cancer", "Oesophageal", "Oesophageal cancer", 36806,
+    "Leukaemia", "Leukaemia", "Leukaemia", 29465,
+    "Corpus uteri cancer", "Corpus uteri", "Corpus uteri cancer", 29000,
+    "Stomach cancer", "Stomach", "Stomach cancer", 26818,
+    "All other cancers", "All other cancers", "All other cancers", 359262,
   ) |>
     mutate(sex = "Women"),
   tribble(
-    ~cause, ~cause_lab, ~deaths,
-    "Trachea bronchus lung cancers", "Trachea, bronchus\n and lung cancers", 282422,
-    "Prostate cancer", "Prostate", 164871,
-    "Colon and rectum cancers", "Colon and rectum", 129382,
-    "Oesophagus cancer", "Oesophagus", 75457,
-    "Lymphomas multiple myeloma", "Lymphomas\n multiple myeloma", 64734,
-    "Pancreas cancer", "Pancreas", 61558,
-    "Bladder cancer", "Bladder", 51883,
-    "Stomach cancer", "Stomach", 45852,
-    "Leukaemia", "Leukaemia", 39368,
-    "Liver cancer", "Liver", 36257,
-    "All other cancers", "All other cancers", 333822,
+    ~cause, ~cause_lab_short, ~cause_lab, ~deaths,
+    "Trachea bronchus lung cancers", "Trachea, bronchus\n and lung", "Trachea, bronchus and lung cancers", 282422,
+    "Prostate cancer", "Prostate", "Prostate cancer", 164871,
+    "Colon and rectum cancers", "Colorectal", "Colorectal cancer", 129382,
+    "Oesophagus cancer", "Oesophageal", "Oesophageal cancer", 75457,
+    "Lymphomas multiple myeloma", "Lymphomas,\n multiple myeloma", "Lymphomas, multiple myeloma", 64734,
+    "Pancreas cancer", "Pancreatic", "Pancreatic cancer", 61558,
+    "Bladder cancer", "Bladder", "Bladder cancer", 51883,
+    "Stomach cancer", "Stomach", "Stomach cancer", 45852,
+    "Leukaemia", "Leukaemia", "Leukaemia", 39368,
+    "Liver cancer", "Liver", "Liver cancer", 36257,
+    "All other cancers", "All other cancers", "All other cancers", 333822,
   ) |>
     mutate(sex = "Men")
 ) |>
   group_by(sex) |>
   mutate(prop = deaths * 100 / sum(deaths))
+
+cause_lab_levels <- list(
+  male = tm_df |>
+    filter(sex == "Men") |>
+    arrange(match(cause, cause_list[["male"]][-12])) |>
+    pull(cause_lab) |>
+    c("All cancers"),
+  female = tm_df |>
+    filter(sex == "Women") |>
+    arrange(match(cause, cause_list[["female"]][-12])) |>
+    pull(cause_lab) |>
+    c("All cancers")
+)
 ```
 
 ```{r calculate median 80q0 over time}
@@ -264,7 +277,7 @@ apply(
 p <- tm_df |>
   mutate(
     lab = str_c(
-      cause_lab,
+      cause_lab_short,
       "\n",
       format(deaths, big.mark = ","),
       "\n(",
@@ -306,6 +319,10 @@ Maps of 80q0 in 2019 and d80q0 2002-19.
 for (s in c("female", "male")) {
   for (disease in cause_list[[s]]) {
     print(disease)
+    disease_label <- tm_df |>
+      filter(cause == disease) |>
+      pull(cause_lab)
+
     map <- shape |>
       left_join(
         median_q |>
@@ -329,7 +346,7 @@ for (s in c("female", "male")) {
       ridge_skeleton +
       scale_fill_continuous_sequential(
         palette = "Reds",
-        name = str_c("Probability of dying for \n", disease),
+        name = str_c("Probability of dying from\n", disease_label),
         breaks = breaks_pretty(n = 3)
       )
 
@@ -381,7 +398,7 @@ for (s in c("female", "male")) {
       scale_fill_continuous_divergingx(
         palette = "Geyser",
         mid = change_mp,
-        name = str_c("Change in probability for \n", disease),
+        name = str_c("Change in probability for\n", disease_label),
         labels = percent,
         breaks = breaks_pretty(n = 3)
       )
@@ -420,12 +437,14 @@ p_female <- median_q |>
   select(all_of(cause_list[["female"]])) |>
   select(-`All cancers`) |>
   ggcorr(size = 0) +
-  pair_skeleton +
   geom_text(
     data = tibble(
       x = seq(cause_list[["female"]][-12]),
       y = seq(cause_list[["female"]][-12]),
-      lbs = cause_list[["female"]][-12]
+      lbs = tm_df |>
+        filter(sex == "Women") |>
+        arrange(match(cause, cause_list[["female"]][-12])) |>
+        pull(cause_lab_short)
     ),
     aes(x, y, label = str_wrap(lbs, 12)),
     nudge_x = -0.5,
@@ -433,7 +452,8 @@ p_female <- median_q |>
     size = 1.5
   ) +
   labs(caption = "Probability of dying between birth and 80 in 2019, women") +
-  theme_thesis()
+  theme_thesis() +
+  pair_skeleton
 
 p_male <- median_q |>
   pluck("male") |>
@@ -446,12 +466,14 @@ p_male <- median_q |>
   select(all_of(cause_list[["male"]])) |>
   select(-`All cancers`) |>
   ggcorr(size = 0) +
-  pair_skeleton +
   geom_text(
     data = tibble(
       x = seq(cause_list[["male"]][-12]),
       y = seq(cause_list[["male"]][-12]),
-      lbs = cause_list[["male"]][-12]
+      lbs = tm_df |>
+        filter(sex == "Men") |>
+        arrange(match(cause, cause_list[["male"]][-12])) |>
+        pull(cause_lab_short)
     ),
     aes(x, y, label = str_wrap(lbs, 12)),
     nudge_x = -0.5,
@@ -460,7 +482,8 @@ p_male <- median_q |>
   ) +
   labs(caption = "Probability of dying between birth and 80 in 2019, men") +
   theme_thesis() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  pair_skeleton
 
 grid <- plot_grid(p_female + theme(legend.position = "none"), p_male)
 grid <- plot_grid(get_legend(p_female), grid, ncol = 1, rel_heights = c(.1, 1))
@@ -483,7 +506,11 @@ for (s in c("female", "male")) {
   p <- median_q |>
     pluck(s) |>
     filter(year == 2019) |>
-    mutate(LAD2020 = LAD) |>
+    left_join(tm_df) |>
+    mutate(
+      LAD2020 = LAD,
+      cause_lab = replace_na(cause_lab, "All cancers")
+    ) |>
     left_join(imd |> select(LAD2020, `income rank`)) |>
     left_join(lookup) |>
     ggplot(
@@ -495,7 +522,7 @@ for (s in c("female", "male")) {
     ) +
     geom_point(size = 0.1) +
     facet_wrap(
-      ~ factor(cause, levels = cause_list[[s]]),
+      ~ factor(cause_lab, levels = cause_lab_levels[[s]]),
       scales = "free_y",
       labeller = label_wrap_gen(20)
     ) +
@@ -591,13 +618,13 @@ quantile_q |>
 for (s in c("female", "male")) {
   p <- quantile_q |>
     pluck(s) |>
+    left_join(tm_df) |>
+    mutate(cause_lab = replace_na(cause_lab, "All cancers")) |>
     ggplot(aes(x = rank, colour = year)) +
     geom_segment(aes(xend = rank, y = `2.5%`, yend = `97.5%`), alpha = 0.1) +
     geom_point(aes(y = `50%`), size = 0.1) +
     facet_wrap(
-      ~ factor(cause,
-        levels = cause_list[[s]]
-      ),
+      ~ factor(cause_lab, levels = cause_lab_levels[[s]]),
       scales = "free",
       labeller = label_wrap_gen(20)
     ) +
@@ -636,14 +663,16 @@ for (s in c("female", "male")) {
     pluck(s) |>
     filter(year == 2002) |>
     left_join(median_q_rel_change |> pluck(s)) |>
-    mutate(LAD2020 = LAD) |>
+    left_join(tm_df) |>
+    mutate(
+      LAD2020 = LAD,
+      cause_lab = replace_na(cause_lab, "All cancers")
+    ) |>
     left_join(lookup) |>
     ggplot(aes(x = `80q0`, y = d80q0, colour = factor(GOR2011NM, levels = regions))) +
     geom_point(size = 0.1) +
     facet_wrap(
-      ~ factor(cause,
-        levels = cause_list[[s]]
-      ),
+      ~ factor(cause_lab, levels = cause_lab_levels[[s]]),
       scales = "free",
       labeller = label_wrap_gen(20)
     ) +

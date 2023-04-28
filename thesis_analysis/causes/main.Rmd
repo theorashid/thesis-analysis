@@ -330,7 +330,7 @@ for (s in sexes) {
       ridge_skeleton +
       scale_fill_continuous_sequential(
         palette = "Reds",
-        name = str_c("Probability of dying for \n", disease_label),
+        name = str_c("Probability of dying from\n", disease_label),
         breaks = breaks_pretty(n = 3)
       )
 
@@ -382,7 +382,7 @@ for (s in sexes) {
       scale_fill_continuous_divergingx(
         palette = "Geyser",
         mid = change_mp,
-        name = str_c("Change in probability for \n", disease_label),
+        name = str_c("Change in probability for\n", disease_label),
         labels = percent,
         breaks = breaks_pretty(n = 3)
       )
