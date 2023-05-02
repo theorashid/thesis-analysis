@@ -591,8 +591,9 @@ for (s in sexes) {
             )
           )
         )
+
         print(
-          e0_change <- e0_decompose |>
+          e0_decompose |>
             as.data.frame.table(stringsAsFactors = FALSE) |>
             as_tibble() |>
             rename(Dx = Freq) |>
@@ -764,6 +765,68 @@ for (s in sexes) {
     grid,
     base_height = 7.00,
     base_width = 3.71
+  )
+}
+```
+
+```{r decomposition top district data}
+for (s in sexes) {
+  if (s == "female") id <- 2 else id <- 1
+  e0_decompose <- read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_",
+        s,
+        "_",
+        args$model,
+        "_e0_decompose_inequality2019",
+        ".rds"
+      )
+    )
+  )
+
+  # contribution to inequality at top district is NaN
+  e0_decompose[is.na(e0_decompose)] <- 0
+
+  print(s)
+
+  print(
+    e0_decompose |>
+      as.data.frame.table(stringsAsFactors = FALSE) |>
+      as_tibble() |>
+      rename(Dx = Freq) |>
+      group_by(LAD) |>
+      summarise(de0 = sum(Dx)) |>
+      arrange(-de0)
+  )
+
+  print(
+    e0_decompose |>
+      as.data.frame.table(stringsAsFactors = FALSE) |>
+      as_tibble() |>
+      rename(Dx = Freq) |>
+      group_by(cause) |>
+      summarise(
+        min = min(Dx),
+        max = max(Dx),
+        max_min = max(Dx) - min(Dx),
+        q90_q10 = quantile(Dx, 0.9) - quantile(Dx, 0.1)
+      ) |>
+      arrange(q90_q10)
+  )
+
+  print(
+    e0_decompose |>
+      as.data.frame.table(stringsAsFactors = FALSE) |>
+      as_tibble() |>
+      rename(Dx = Freq) |>
+      group_by(LAD) |>
+      filter(Dx == max(Dx)) |>
+      group_by(cause) |>
+      tally()
   )
 }
 ```
