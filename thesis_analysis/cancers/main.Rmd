@@ -315,6 +315,118 @@ quartz.save(
 ## maps
 
 Maps of 80q0 in 2019 and d80q0 2002-19.
+```{r map 80q0 All cancers}
+for (s in c("female", "male")) {
+  if (s == "female") grid_label <- "Women" else grid_label <- "Men"
+  level_df <- shape |>
+    left_join(
+      median_q |>
+        pluck(s) |>
+        filter(year == 2019) |>
+        filter(cause == "All cancers") |>
+        mutate(LAD2020 = LAD)
+    ) |>
+    left_join(lookup)
+
+  level_scale <- scale_fill_continuous_sequential(
+    palette = "Reds",
+    name = "Probability of dying from\nAll cancers",
+    breaks = breaks_pretty(n = 3),
+    limits = c(min(level_df$`80q0`) * 0.97, max(level_df$`80q0`) * 1.03)
+  )
+
+  map <- level_df |>
+    ggplot(aes(fill = `80q0`)) +
+    map_skeleton +
+    level_scale
+
+  london_level <- level_df |>
+    filter(GOR2011 == "E12000007") |>
+    ggplot(aes(fill = `80q0`)) +
+    map_skeleton +
+    level_scale
+
+  p <- median_q |>
+    pluck(s) |>
+    filter(year == 2019) |>
+    filter(cause == "All cancers") |>
+    ggplot(aes(x = `80q0`, y = 1, fill = after_stat(x))) +
+    ridge_skeleton +
+    level_scale
+
+  change_df <- shape |>
+    left_join(
+      median_q_rel_change |>
+        pluck(s) |>
+        filter(cause == "All cancers") |>
+        mutate(LAD2020 = LAD)
+    ) |>
+    left_join(lookup)
+
+  range_change <- change_df |>
+    pull(d80q0) |>
+    range()
+
+  if ((range_change[1] < 0) & (range_change[2] < 0)) {
+    change_mp <- range_change[2]
+  } else if ((range_change[1] < 0) & (range_change[2] > 0)) {
+    change_mp <- 0
+  } else {
+    change_mp <- range_change[1]
+  }
+
+  print(change_mp)
+
+  change_scale <- scale_fill_continuous_divergingx(
+    palette = "Geyser",
+    mid = change_mp,
+    name = "Change in probability for\nAll cancers",
+    labels = percent,
+    breaks = breaks_pretty(n = 3),
+    limits = c(range_change[1] * 1.03, range_change[2] * 0.97)
+  )
+
+  map_change <- change_df |>
+    ggplot(aes(fill = `d80q0`)) +
+    map_skeleton +
+    change_scale
+
+  london_change <- change_df |>
+    filter(GOR2011 == "E12000007") |>
+    ggplot(aes(fill = `d80q0`)) +
+    map_skeleton +
+    change_scale
+
+  p_change <- change_df |>
+    ggplot(aes(x = `d80q0`, y = 1, fill = after_stat(x))) +
+    ridge_skeleton +
+    change_scale
+
+  grid <- plot_grid(map, map_change)
+
+  grid <- ggdraw(grid) +
+    draw_plot(p, -0.1, 0.3, scale = 0.11) +
+    draw_plot(p_change, 0.4, 0.3, scale = 0.11) +
+    draw_plot(london_level, -0.4, -0.1, scale = 0.16) +
+    draw_line(x = c(x = 0.373, 0.164), y = c(0.306, 0.38), size = 0.1) +
+    draw_label("London", x = 0.094, y = 0.491, size = 3) +
+    draw_plot(london_change, -0.4 + 0.5, -0.1, scale = 0.16) +
+    draw_line(x = c(x = 0.373 + 0.5, 0.164 + 0.5), y = c(0.306, 0.38), size = 0.1) +
+    draw_label("London", x = 0.094 + 0.5, y = 0.491, size = 3) +
+    draw_label(grid_label, x = 0.1, y = 0.9, size = 6, fontface = "bold")
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "cancers",
+      "figures",
+      str_c(s, "_map_all cancers_grid", ".pdf")
+    ),
+    grid
+  )
+}
+```
+
 ```{r map 80q0}
 for (s in c("female", "male")) {
   for (disease in cause_list[[s]]) {
@@ -620,9 +732,17 @@ quantile_q |>
 
 ```{r distribution plot}
 for (s in c("female", "male")) {
+  if (s == "female") {
+    dist_pal <- c(desaturate(sex_pal[2], amount = 0.5), sex_pal[2])
+    sex_lab <- "Women"
+  } else {
+    dist_pal <- c(desaturate(sex_pal[1], amount = 0.5), sex_pal[1])
+    sex_lab <- "Men"
+  }
+
   p <- quantile_q |>
     pluck(s) |>
-    left_join(tm_df) |>
+    left_join(tm_df |> filter(sex == sex_lab)) |>
     mutate(cause_lab = replace_na(cause_lab, "All cancers")) |>
     ggplot(aes(x = rank, colour = year)) +
     geom_segment(aes(xend = rank, y = `2.5%`, yend = `97.5%`), alpha = 0.1) +
@@ -637,7 +757,7 @@ for (s in c("female", "male")) {
       y = "Probability of dying between birth and 80"
     ) +
     scale_colour_manual(
-      values = c("Grey60", "Grey10"),
+      values = dist_pal,
       name = ""
     ) +
     theme_thesis() +
