@@ -237,7 +237,8 @@ scale_change <- scale_fill_continuous_divergingx(
   p3 = 0.3,
   p4 = 0.3,
   name = "Life expectancy change from 2002-19 (years)",
-  breaks = breaks_pretty(n = 8)
+  breaks = breaks_pretty(n = 8),
+  limits = c(min(median_e0_change$de0), max(median_e0_change$de0))
 )
 
 maps <- list()
