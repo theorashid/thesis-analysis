@@ -467,6 +467,17 @@ save_plot(
 ## maps
 
 ```{r map level 2019 1}
+plot_df <- list()
+for (s in sexes) {
+  plot_df[[s]] <- shape |>
+    left_join(lookup) |>
+    left_join(
+      median_e0 |>
+        filter(sex == s) |>
+        filter(year == 2019)
+    )
+}
+
 scale_sex <- list(
   women = scale_fill_continuous_divergingx(
     palette = "RdBu",
@@ -474,12 +485,13 @@ scale_sex <- list(
       filter(sex == "women") |>
       filter(year == 2019) |>
       pull(e0),
-    p1 = 0.8,
-    p2 = 0.8,
-    p3 = 0.8,
-    p4 = 0.8,
+    p1 = 0.6,
+    p2 = 0.6,
+    p3 = 0.6,
+    p4 = 0.6,
     name = "Life expectancy, women",
-    breaks = breaks_pretty(n = 5)
+    breaks = breaks_pretty(n = 5),
+    limits = c(min(plot_df$women$e0) * 0.97, max(plot_df$women$e0) * 1.03)
   ),
   men = scale_fill_continuous_divergingx(
     palette = "RdBu",
@@ -487,12 +499,13 @@ scale_sex <- list(
       filter(sex == "men") |>
       filter(year == 2019) |>
       pull(e0),
-    p1 = 0.8,
-    p2 = 0.8,
-    p3 = 0.8,
-    p4 = 0.8,
+    p1 = 0.6,
+    p2 = 0.6,
+    p3 = 0.6,
+    p4 = 0.6,
     name = "Life expectancy, men",
-    breaks = breaks_pretty(n = 5)
+    breaks = breaks_pretty(n = 5),
+    limits = c(min(plot_df$men$e0) * 0.97, max(plot_df$men$e0) * 1.03)
   )
 )
 
@@ -505,44 +518,36 @@ london <- list()
 ridges <- list()
 
 for (s in sexes) {
-  plot_df <- shape |>
-    left_join(lookup) |>
-    left_join(
-      median_e0 |>
-        filter(sex == s) |>
-        filter(year == 2019)
-    )
-
-  maps[[s]] <- plot_df |>
+  maps[[s]] <- plot_df[[s]] |>
     ggplot(aes(fill = `e0`)) +
     map_skeleton_msoa +
     scale_sex[[s]]
 
-  manchester[[s]] <- plot_df |>
+  manchester[[s]] <- plot_df[[s]] |>
     filter(LAD2020 == "E08000003") |>
     ggplot(aes(fill = `e0`)) +
     map_skeleton_msoa +
     scale_sex[[s]]
 
-  liverpool[[s]] <- plot_df |>
+  liverpool[[s]] <- plot_df[[s]] |>
     filter(LAD2020 == "E08000012") |>
     ggplot(aes(fill = `e0`)) +
     map_skeleton_msoa +
     scale_sex[[s]]
 
-  birmingham[[s]] <- plot_df |>
+  birmingham[[s]] <- plot_df[[s]] |>
     filter(LAD2020 == "E08000025") |>
     ggplot(aes(fill = `e0`)) +
     map_skeleton_msoa +
     scale_sex[[s]]
 
-  leeds[[s]] <- plot_df |>
+  leeds[[s]] <- plot_df[[s]] |>
     filter(LAD2020 == "E08000035") |>
     ggplot(aes(fill = `e0`)) +
     map_skeleton_msoa +
     scale_sex[[s]]
 
-  london[[s]] <- plot_df |>
+  london[[s]] <- plot_df[[s]] |>
     filter(GOR2011 == "E12000007") |>
     ggplot(aes(fill = `e0`)) +
     map_skeleton_msoa +
@@ -684,7 +689,8 @@ scale_change <- scale_fill_continuous_divergingx(
   p3 = 0.3,
   p4 = 0.3,
   name = "Life expectancy change from 2002-19 (years)",
-  breaks = breaks_pretty(n = 8)
+  breaks = breaks_pretty(n = 8),
+  limits = c(min(median_e0_change$de0), max(median_e0_change$de0))
 )
 
 maps <- list()
