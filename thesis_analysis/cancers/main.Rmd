@@ -745,8 +745,8 @@ for (s in c("female", "male")) {
     left_join(tm_df |> filter(sex == sex_lab)) |>
     mutate(cause_lab = replace_na(cause_lab, "All cancers")) |>
     ggplot(aes(x = rank, colour = year)) +
-    geom_segment(aes(xend = rank, y = `2.5%`, yend = `97.5%`), alpha = 0.1) +
-    geom_point(aes(y = `50%`), size = 0.1) +
+    geom_segment(aes(xend = rank, y = `2.5%`, yend = `97.5%`), linewidth = 0.1, alpha = 0.3) +
+    geom_point(aes(y = `50%`), size = 0.3, stroke = 0.1, shape = 16) +
     facet_wrap(
       ~ factor(cause_lab, levels = cause_lab_levels[[s]]),
       scales = "free",
@@ -760,6 +760,7 @@ for (s in c("female", "male")) {
       values = dist_pal,
       name = ""
     ) +
+    guides(colour = guide_legend(override.aes = list(size = 1, linewidth = 0.5))) +
     theme_thesis() +
     theme(
       legend.position = "top",
@@ -779,43 +780,79 @@ for (s in c("female", "male")) {
 }
 ```
 
-# Change against starting 80q0
+## Change quantile
+
+```{r calculate quantiles d80q0}
+quantile_q_change <- lst()
+for (s in c("male", "female")) {
+  quantile_q_change[[s]] <- apply(
+    X = (cause_q[[s]]["2019", , , ] - cause_q[[s]]["2002", , , ]) / cause_q[[s]]["2002", , , ],
+    MARGIN = c(1, 3),
+    FUN = quantile,
+    p = c(0.025, 0.5, 0.975)
+  ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(quantile = Var1, `80q0` = Freq) |>
+    arrange() |>
+    pivot_wider(names_from = quantile, values_from = `80q0`) |>
+    group_by(cause) |>
+    mutate(rank = rank(`50%`)) |>
+    ungroup()
+}
+```
 
 ```{r change plot}
 for (s in c("female", "male")) {
-  p <- median_q |>
+  if (s == "female") {
+    sex_lab <- "Women"
+  } else {
+    sex_lab <- "Men"
+  }
+
+  p <- quantile_q_change |>
     pluck(s) |>
-    filter(year == 2002) |>
-    left_join(median_q_rel_change |> pluck(s)) |>
-    left_join(tm_df) |>
+    left_join(tm_df |> filter(sex == sex_lab)) |>
     mutate(
       LAD2020 = LAD,
       cause_lab = replace_na(cause_lab, "All cancers")
     ) |>
     left_join(lookup) |>
-    ggplot(aes(x = `80q0`, y = d80q0, colour = factor(GOR2011NM, levels = regions))) +
-    geom_point(size = 0.1) +
+    mutate(
+      region = factor(GOR2011NM, levels = regions)
+    ) |>
+    group_by(cause) |>
+    mutate(
+      rank_ = rank(as.numeric(region) * n_lad + rank)
+    ) |>
+    ggplot(aes(x = rank_, colour = region)) +
+    geom_segment(aes(xend = rank_, y = `2.5%`, yend = `97.5%`), linewidth = 0.1, alpha = 0.3) +
+    geom_point(aes(y = `50%`), size = 0.3, stroke = 0.1, shape = 16) +
     facet_wrap(
       ~ factor(cause_lab, levels = cause_lab_levels[[s]]),
       scales = "free",
       labeller = label_wrap_gen(20)
     ) +
     labs(
-      x = "Probability of dying between birth and 80 in 2002",
+      x = "Ranking of change in probability of death",
       y = "Percent change in probability of dying from 2002 to 2019"
     ) +
     scale_colour_manual(values = region_pal, name = "") +
-    scale_x_continuous(breaks = breaks_pretty(n = 3)) +
     scale_y_continuous(labels = percent) +
+    guides(colour = guide_legend(override.aes = list(size = 1, linewidth = 0.5))) +
     theme_thesis() +
-    theme(legend.key.size = unit(0.01, "npc"))
+    theme(
+      legend.key.size = unit(0.01, "npc"),
+      axis.text.x = element_blank(),
+      axis.ticks.x = element_blank()
+    )
 
   save_plot(
     here(
       "thesis_analysis",
       "cancers",
       "figures",
-      str_c(s, "_level_2002_change", ".pdf")
+      str_c(s, "_change_distribution", ".pdf")
     ),
     p
   )
