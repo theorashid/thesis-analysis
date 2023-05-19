@@ -227,3 +227,42 @@ save_plot(
   plot_grid(p, p_e0, ncol = 2, rel_widths = c(2, 3))
 )
 ```
+
+## simulated death rates
+
+```{r simulated}
+set.seed(1)
+simulated <- read_csv(here("data", "eda", "deaths_eng_age_time.csv")) |>
+  filter(sex == 1) |>
+  filter(age_group == 1 | age_group == 80) |>
+  mutate(
+    simulated = rpois(death_rate, lambda = death_rate * 1000),
+    expected = death_rate * 1000,
+    age_group_lab = case_when(
+      age_group == 1 ~ "1-4 years",
+      age_group == 80 ~ "80-84 years"
+    )
+  ) |>
+  pivot_longer(cols = c(simulated, expected), names_to = "death_type", values_to = "deaths_sim")
+
+p <- simulated |>
+  ggplot(aes(x = YEAR, y = deaths_sim, group = death_type, linetype = death_type)) +
+  geom_line(linewidth = 0.3) +
+  geom_point(size = 0.6) +
+  facet_wrap(~age_group_lab, scales = "free_y", ncol = 1) +
+  scale_linetype_manual(values = c("dotted", "solid")) +
+  scale_x_continuous(breaks = breaks_pretty(8)) +
+  labs(x = "year", y = "Deaths") +
+  theme_thesis() +
+  theme(legend.position = "top", legend.title = element_blank())
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "eda",
+    "figures",
+    "age_mx_time_sim.pdf"
+  ),
+  p
+)
+```
