@@ -301,7 +301,12 @@ p <- quantile_e0 |>
     alpha = 0.05,
     linewidth = 0.1
   ) +
-  geom_point(aes(y = `50%`, colour = sex_year), size = 0.1) +
+  geom_point(
+    aes(y = `50%`, colour = sex_year),
+    size = 0.1,
+    stroke = 0.1,
+    shape = 16
+  ) +
   facet_wrap(~ factor(sex, levels = sexes)) +
   scale_colour_manual(
     values = c(
@@ -324,7 +329,7 @@ p <- quantile_e0 |>
   )
 
 p <- p +
-  geom_point(data = benchmark, aes(x = rank, y = e0_global), size = 0.4) +
+  geom_point(data = benchmark, aes(x = rank, y = e0_global), size = 0.2) +
   geom_segment(
     data = benchmark,
     aes(
@@ -360,9 +365,11 @@ p <- median_e0 |>
   mutate(sex = factor(sex, levels = sexes)) |>
   ggplot(aes(x = year, y = e0, colour = sex)) +
   geom_jitter(
-    width = 0.05,
+    width = 0.1,
     size = 0.01,
-    alpha = 0.1
+    alpha = 0.4,
+    stroke = 0.2,
+    shape = 16
   ) +
   geom_line(data = e0_global, linewidth = 0.8) +
   facet_wrap(~ factor(sex, levels = sexes)) +
@@ -812,8 +819,8 @@ p_level <- median_e0 |>
   filter(year == 2019) |>
   pivot_wider(names_from = sex, values_from = `e0`) |>
   ggplot(aes(x = women, y = men)) +
-  geom_abline(slope = 1, intercept = 0, colour = "grey20", linewidth = 0.5) +
-  geom_point(colour = "#5b6980f5", size = 0.1, alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, colour = "grey20", linewidth = 0.3) +
+  geom_point(colour = "#5b6980f5", size = 0.5, stroke = 0.1, shape = 16, alpha = 0.5) +
   scale_x_continuous(limits = median_e0 |> filter(year == 2019) |> pull(e0) |> range()) +
   scale_y_continuous(limits = median_e0 |> filter(year == 2019) |> pull(e0) |> range()) +
   labs(
@@ -825,8 +832,8 @@ p_level <- median_e0 |>
 p_change <- median_e0_change |>
   pivot_wider(names_from = sex, values_from = `de0`) |>
   ggplot(aes(x = women, y = men)) +
-  geom_abline(slope = 1, intercept = 0, colour = "grey20", linewidth = 0.5) +
-  geom_point(colour = "#5b6980f5", size = 0.1, alpha = 0.5) +
+  geom_abline(slope = 1, intercept = 0, colour = "grey20", linewidth = 0.3) +
+  geom_point(colour = "#5b6980f5", size = 0.5, stroke = 0.1, shape = 16, alpha = 0.5) +
   scale_x_continuous(limits = median_e0_change |> pull(de0) |> range()) +
   scale_y_continuous(limits = median_e0_change |> pull(de0) |> range()) +
   labs(
@@ -921,9 +928,11 @@ p <- median_q |>
   ) |>
   ggplot(aes(x = age_range, y = qmed, colour = sex_year)) +
   geom_jitter(
-    position = position_jitterdodge(jitter.width = 0.5, dodge.width = 0.8),
-    size = 0.01,
-    alpha = 0.1
+    position = position_jitterdodge(jitter.width = 0.6, dodge.width = 0.8),
+    size = 0.1,
+    stroke = 0.1,
+    shape = 16,
+    alpha = 0.5
   ) +
   facet_wrap(~ factor(sex, levels = sexes)) +
   scale_colour_manual(
@@ -940,13 +949,12 @@ p <- median_q |>
   ) +
   guides(colour = guide_legend(override.aes = list(size = 1, alpha = 0.8))) +
   labs(
-    x = "Time period",
-    y = "Life expectancy change during period (years)"
+    x = "Age range (years)",
+    y = "Probability of dying in the age range"
   ) +
   theme_thesis() +
   theme(
     legend.position = "top",
-    axis.ticks.x = element_blank(),
     strip.text = element_blank()
   )
 
@@ -988,12 +996,16 @@ p <- median_e0 |>
   ggplot() +
   geom_point(
     aes(x = rank_2002, y = e0_2002, colour = str_c(sex, ", 2002")),
-    size = 0.1,
+    size = 0.4,
+    stroke = 0.2,
+    shape = 16,
     alpha = 0.1
   ) +
   geom_point(
     aes(x = rank_2019, y = e0_2019, colour = str_c(sex, ", 2019")),
-    size = 0.1,
+    size = 0.4,
+    stroke = 0.2,
+    shape = 16,
     alpha = 0.1
   ) +
   geom_smooth(

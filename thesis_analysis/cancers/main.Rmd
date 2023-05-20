@@ -567,7 +567,7 @@ p_female <- median_q |>
     hjust = 0,
     size = 1.5
   ) +
-  labs(caption = "Probability of dying between birth and 80 in 2019, women") +
+  labs(caption = "Probability of dying in 2019, women") +
   theme_thesis() +
   pair_skeleton
 
@@ -596,7 +596,7 @@ p_male <- median_q |>
     hjust = 0,
     size = 1.5
   ) +
-  labs(caption = "Probability of dying between birth and 80 in 2019, men") +
+  labs(caption = "Probability of dying in 2019, men") +
   theme_thesis() +
   theme(legend.position = "none") +
   pair_skeleton
@@ -644,7 +644,7 @@ for (s in c("female", "male")) {
     ) +
     labs(
       x = "Income deprivation rank",
-      y = "Probability of dying between birth and 80 in 2019"
+      y = "Probability of dying between birth and 80 years of age in 2019"
     ) +
     scale_colour_manual(values = region_pal, name = "") +
     scale_x_continuous(
@@ -753,8 +753,8 @@ for (s in c("female", "male")) {
       labeller = label_wrap_gen(20)
     ) +
     labs(
-      x = "Ranking of probability of death",
-      y = "Probability of dying between birth and 80"
+      x = "Ranking of probability of dying",
+      y = "Probability of dying between birth and 80 years of age"
     ) +
     scale_colour_manual(
       values = dist_pal,
@@ -834,7 +834,7 @@ for (s in c("female", "male")) {
       labeller = label_wrap_gen(20)
     ) +
     labs(
-      x = "Ranking of change in probability of death",
+      x = "Ranking of change in probability of dying",
       y = "Percent change in probability of dying from 2002 to 2019"
     ) +
     scale_colour_manual(values = region_pal, name = "") +

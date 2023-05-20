@@ -42,7 +42,7 @@ ridge_skeleton <- list(
 
 jitter_change_skeleton <- list(
   geom_hline(yintercept = 0, linewidth = 0.05, alpha = 0.5),
-  geom_beeswarm(size = 0.01, cex = 0.18, side = 1L),
+  geom_beeswarm(size = 0.1, stroke = 0.1, shape = 16, cex = 0.18, side = 1L),
   scale_colour_continuous_divergingx(
     palette = "Zissou",
     name = "Percentile of life expectancy at the start of each time period",
