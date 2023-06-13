@@ -552,7 +552,7 @@ p_female <- median_q |>
   ) |>
   select(all_of(cause_list[["female"]])) |>
   select(-`All cancers`) |>
-  ggcorr(size = 0, label = TRUE, label_size = 2, label_round = 2) +
+  ggcorr(size = 0) +
   geom_text(
     data = tibble(
       x = seq(cause_list[["female"]][-12]),
@@ -581,7 +581,7 @@ p_male <- median_q |>
   ) |>
   select(all_of(cause_list[["male"]])) |>
   select(-`All cancers`) |>
-  ggcorr(size = 0, label = TRUE, label_size = 2, label_round = 2) +
+  ggcorr(size = 0) +
   geom_text(
     data = tibble(
       x = seq(cause_list[["male"]][-12]),
