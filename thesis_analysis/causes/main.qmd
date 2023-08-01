@@ -186,7 +186,11 @@ for (s in c("male", "female")) {
 
 median_q_rel_change[["male"]] |>
   group_by(cause) |>
-  summarise(median_change = median(d80q0) * 100) |>
+  summarise(
+    median_change = median(d80q0) * 100,
+    max_change = max(d80q0) * 100,
+    min_change = min(d80q0) * 100
+  ) |>
   arrange(median_change)
 ```
 
