@@ -2,7 +2,7 @@
 title: "england"
 author: "Theo Rashid"
 date: "16/01/2023"
-output: html_document
+format: html
 ---
 
 ## england msoa

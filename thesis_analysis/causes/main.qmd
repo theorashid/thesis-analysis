@@ -2,7 +2,7 @@
 title: "causes"
 author: "Theo Rashid"
 date: "20/03/2023"
-output: html_document
+format: html
 ---
 
 ## cause rates
@@ -184,7 +184,7 @@ for (s in c("male", "female")) {
     rename(d80q0 = Freq)
 }
 
-median_q_rel_change[["male"]] |>
+median_q_rel_change[["female"]] |>
   group_by(cause) |>
   summarise(
     median_change = median(d80q0) * 100,

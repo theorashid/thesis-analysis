@@ -2,7 +2,7 @@
 title: "cancers"
 author: "Theo Rashid"
 date: "19/12/2022"
-output: html_document
+format: html
 ---
 
 ## cause rates

@@ -2,7 +2,7 @@
 title: "eda"
 author: "Theo Rashid"
 date: "07/03/2023"
-output: html_document
+format: html
 ---
 
 ## cause rates
