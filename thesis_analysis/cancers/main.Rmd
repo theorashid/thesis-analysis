@@ -5,10 +5,6 @@ date: "19/12/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## cause rates
 
 ```{r imports}
@@ -250,6 +246,10 @@ for (s in c("male", "female")) {
     as_tibble() |>
     rename(d80q0 = Freq)
 }
+
+median_q_rel_change[["male"]] |>
+  group_by(cause) |>
+  summarise(median(d80q0))
 ```
 
 Relative changes:
@@ -269,6 +269,27 @@ apply(
   pivot_wider(names_from = quantile, values_from = `rel_change`) |>
   filter(cause == "All cancers") |>
   arrange(-`50%`)
+```
+
+```{r posterior probability of decline}
+q_rel_change_pp <- lst()
+for (s in c("male", "female")) {
+  q_rel_change_pp[[s]] <- apply(
+    X = (cause_q[[s]]["2019", , , ] - cause_q[[s]]["2002", , , ]),
+    MARGIN = c(1, 3),
+    FUN = \(x) sum(x < 0) / dim(cause_q[[s]])[3]
+  ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(pp_d80q0 = Freq)
+}
+
+q_rel_change_pp[["female"]] |>
+  group_by(cause) |>
+  summarise(
+    big_decrease = sum(pp_d80q0 > 0.8) / 314,
+    big_increase = sum(pp_d80q0 < 0.2) / 314
+  )
 ```
 
 ## treemap
@@ -429,17 +450,30 @@ for (s in c("female", "male")) {
 
 ```{r map 80q0}
 for (s in c("female", "male")) {
+  if (s == "female") {
+    sex_label <- "women"
+    sex_filter <- "Women"
+  } else {
+    sex_label <- "men"
+    sex_filter <- "Men"
+  }
   for (disease in cause_list[[s]]) {
     print(disease)
     if (disease == "All cancers") {
       disease_label <- disease
+      grid_label <- ""
     } else {
       disease_label <- tm_df |>
         filter(cause == disease) |>
         pull(cause_lab)
+      grid_label <- str_c(
+        disease_label,
+        ", ",
+        sex_label
+      )
     }
 
-    map <- shape |>
+    level_df <- shape |>
       left_join(
         median_q |>
           pluck(s) |>
@@ -447,12 +481,25 @@ for (s in c("female", "male")) {
           filter(cause == disease) |>
           mutate(LAD2020 = LAD)
       ) |>
+      left_join(lookup)
+
+    level_scale <- scale_fill_continuous_sequential(
+      palette = "Reds",
+      name = str_c("Probability of dying from\n", disease_label),
+      breaks = breaks_pretty(n = 3),
+      limits = c(min(level_df$`80q0`) * 0.97, max(level_df$`80q0`) * 1.03)
+    )
+
+    map <- level_df |>
       ggplot(aes(fill = `80q0`)) +
       map_skeleton +
-      scale_fill_continuous_sequential(
-        palette = "Reds",
-        name = ""
-      )
+      level_scale
+
+    london_level <- level_df |>
+      filter(GOR2011 == "E12000007") |>
+      ggplot(aes(fill = `80q0`)) +
+      map_skeleton +
+      level_scale
 
     p <- median_q |>
       pluck(s) |>
@@ -460,77 +507,81 @@ for (s in c("female", "male")) {
       filter(cause == disease) |>
       ggplot(aes(x = `80q0`, y = 1, fill = after_stat(x))) +
       ridge_skeleton +
-      scale_fill_continuous_sequential(
-        palette = "Reds",
-        name = str_c("Probability of dying from\n", disease_label),
-        breaks = breaks_pretty(n = 3)
-      )
+      level_scale
 
-    range_change <- median_q_rel_change |>
-      pluck(s) |>
-      filter(cause == disease) |>
-      pull(d80q0) |>
-      range() |>
-      sign() |>
-      sum()
-
-    if (range_change == 0) {
-      change_mp <- 0
-    } else if (range_change < 0) {
-      change_mp <- median_q_rel_change |>
-        pluck(s) |>
-        filter(cause == disease) |>
-        pull(d80q0) |>
-        max()
-    } else {
-      change_mp <- median_q_rel_change |>
-        pluck(s) |>
-        filter(cause == disease) |>
-        pull(d80q0) |>
-        min()
-    }
-
-    map_change <- shape |>
+    change_df <- shape |>
       left_join(
         median_q_rel_change |>
           pluck(s) |>
           filter(cause == disease) |>
           mutate(LAD2020 = LAD)
       ) |>
+      left_join(lookup)
+
+    range_change <- change_df |>
+      pull(d80q0) |>
+      range()
+
+    if ((range_change[1] < 0) & (range_change[2] < 0)) {
+      change_mp <- range_change[2]
+      sf_low <- 1.03
+      sf_high <- 0.97
+    } else if ((range_change[1] < 0) & (range_change[2] > 0)) {
+      change_mp <- 0
+      sf_low <- 1.03
+      sf_high <- 1.03
+    } else {
+      change_mp <- range_change[1]
+      sf_low <- 0.97
+      sf_high <- 1.03
+    }
+
+    print(change_mp)
+
+    change_scale <- scale_fill_continuous_divergingx(
+      palette = "Geyser",
+      mid = change_mp,
+      name = str_c("Change in probability for\n", disease_label),
+      labels = percent,
+      breaks = breaks_pretty(n = 3),
+      limits = c(range_change[1] * sf_low, range_change[2] * sf_high)
+    )
+
+    map_change <- change_df |>
       ggplot(aes(fill = `d80q0`)) +
       map_skeleton +
-      scale_fill_continuous_divergingx(
-        palette = "Geyser",
-        mid = change_mp,
-        name = "",
-        labels = percent
-      )
+      change_scale
 
-    p_change <- median_q_rel_change |>
-      pluck(s) |>
-      filter(cause == disease) |>
+    london_change <- change_df |>
+      filter(GOR2011 == "E12000007") |>
+      ggplot(aes(fill = `d80q0`)) +
+      map_skeleton +
+      change_scale
+
+    p_change <- change_df |>
       ggplot(aes(x = `d80q0`, y = 1, fill = after_stat(x))) +
       ridge_skeleton +
-      scale_fill_continuous_divergingx(
-        palette = "Geyser",
-        mid = change_mp,
-        name = str_c("Change in probability for\n", disease_label),
-        labels = percent,
-        breaks = breaks_pretty(n = 3)
-      )
+      change_scale
 
     grid <- plot_grid(map, map_change)
 
     grid <- ggdraw(grid) +
-      draw_plot(p, -0.35, -0.15, scale = 0.11) +
-      draw_plot(p_change, 0.15, -0.15, scale = 0.11)
+      draw_plot(p, -0.1, 0.35, scale = 0.11) +
+      draw_plot(p_change, 0.4, 0.35, scale = 0.11) +
+      draw_plot(london_level, -0.4, -0.1, scale = 0.16) +
+      draw_line(x = c(x = 0.373, 0.164), y = c(0.306, 0.38), size = 0.1) +
+      draw_label("London", x = 0.094, y = 0.491, size = 3) +
+      draw_plot(london_change, -0.4 + 0.5, -0.1, scale = 0.16) +
+      draw_line(x = c(x = 0.373 + 0.5, 0.164 + 0.5), y = c(0.306, 0.38), size = 0.1) +
+      draw_label("London", x = 0.094 + 0.5, y = 0.491, size = 3) +
+      draw_label(grid_label, x = 0.2, y = 0.97, size = 6, fontface = "bold")
 
     save_plot(
       here(
         "thesis_analysis",
         "cancers",
         "figures",
-        str_c(s, "_map_", str_replace_all(disease, " ", "_"), ".pdf")
+        str_c(s, "_map_lab_", str_replace_all(disease, " ", "_"), ".pdf")
       ),
       grid
     )
@@ -617,12 +668,33 @@ save_plot(
 
 ## poverty
 
+Correlation of each cancer with poverty:
+
+```{r correlation with poverty}
+correlations <- lst()
+for (s in c("female", "male")) {
+  correlations[[s]] <- median_q |>
+    pluck(s) |>
+    filter(year == 2019) |>
+    mutate(LAD2020 = LAD) |>
+    left_join(imd |> select(LAD2020, `income rank`)) |>
+    group_by(cause) |>
+    summarise(correlation = cor(`80q0`, `income rank`, method = "spearman"))
+}
+```
+
 ```{r plot IMD}
 for (s in c("female", "male")) {
+  if (s == "female") {
+    sex_filter <- "Women"
+  } else {
+    sex_filter <- "Men"
+  }
+
   p <- median_q |>
     pluck(s) |>
     filter(year == 2019) |>
-    left_join(tm_df) |>
+    left_join(tm_df |> filter(sex == sex_filter)) |>
     mutate(
       LAD2020 = LAD,
       cause_lab = replace_na(cause_lab, "All cancers")
@@ -657,6 +729,33 @@ for (s in c("female", "male")) {
       axis.ticks.x = element_blank()
     )
 
+  # correlation annotation, rho separate due to parsing difficulties
+  p <- p +
+    geom_text(
+      data = correlations |>
+        pluck(s) |>
+        left_join(tm_df |> filter(sex == sex_filter)) |>
+        mutate(cause_lab = replace_na(cause_lab, "All cancers")),
+      aes(label = str_c("  = ", format(round(correlation, 2), nsmall = 2))),
+      x = -Inf,
+      y = Inf,
+      hjust = -0.1,
+      vjust = 1,
+      size = 1.8,
+      colour = "black"
+    ) +
+    geom_text(
+      label = "rho",
+      x = -Inf,
+      y = Inf,
+      hjust = -0.2,
+      vjust = 1.2,
+      size = 2,
+      colour = "black",
+      parse = T
+    )
+
+
   save_plot(
     here(
       "thesis_analysis",
@@ -667,18 +766,6 @@ for (s in c("female", "male")) {
     p
   )
 }
-```
-
-Correlation of each cancer with poverty:
-
-```{r correlation with poverty}
-median_q |>
-  bind_rows(.id = "sex") |>
-  filter(year == 2019) |>
-  mutate(LAD2020 = LAD) |>
-  left_join(imd |> select(LAD2020, `income rank`)) |>
-  group_by(sex, cause) |>
-  summarise(correlation = cor(`80q0`, `income rank`, method = "spearman"))
 ```
 
 ## distribution

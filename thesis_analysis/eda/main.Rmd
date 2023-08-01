@@ -5,10 +5,6 @@ date: "07/03/2023"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## cause rates
 
 ```{r imports}
@@ -52,51 +48,76 @@ Maps of life expectancy from all deaths 2002-19.
 ```{r map e0}
 e0_LAD <- read_csv(here("data", "eda", "e0_eng_LAD.csv"))
 
-map_skeleton <- append(
-  map_skeleton,
-  scale_fill_continuous_sequential(
-    palette = "Reds",
-    rev = FALSE,
-    name = ""
-  )
+level_df_female <- shape |>
+  left_join(e0_LAD |>
+    filter(sex == 2)) |>
+  left_join(lookup)
+
+level_df_male <- shape |>
+  left_join(e0_LAD |>
+    filter(sex == 1)) |>
+  left_join(lookup)
+
+level_scale_female <- scale_fill_continuous_sequential(
+  palette = "Reds",
+  rev = FALSE,
+  name = str_c("Life expectancy, women"),
+  breaks = breaks_pretty(n = 5),
+  limits = c(min(level_df_female$`ex`) * 0.97, max(level_df_female$`ex`) * 1.03)
 )
 
-grid <- plot_grid(
-  shape |>
-    left_join(e0_LAD |> filter(sex == 2)) |>
-    ggplot(aes(fill = `ex`)) +
-    map_skeleton,
-  shape |>
-    left_join(e0_LAD |> filter(sex == 1)) |>
-    ggplot(aes(fill = `ex`)) +
-    map_skeleton
+level_scale_male <- scale_fill_continuous_sequential(
+  palette = "Reds",
+  rev = FALSE,
+  name = str_c("Life expectancy, men"),
+  breaks = breaks_pretty(n = 5),
+  limits = c(min(level_df_male$ex) * 0.97, max(level_df_male$ex) * 1.03)
 )
+
+london_female <- level_df_female |>
+  filter(GOR2011 == "E12000007") |>
+  ggplot(aes(fill = ex)) +
+  map_skeleton +
+  level_scale_female
+
+london_male <- level_df_male |>
+  filter(GOR2011 == "E12000007") |>
+  ggplot(aes(fill = ex)) +
+  map_skeleton +
+  level_scale_male
 
 p_female <- e0_LAD |>
   filter(sex == 2) |>
   ggplot(aes(x = `ex`, y = 1, fill = after_stat(x))) +
   ridge_skeleton +
-  scale_fill_continuous_sequential(
-    palette = "Reds",
-    rev = FALSE,
-    name = str_c("Life expectancy, women"),
-    n.breaks = 5
-  )
+  level_scale_female
 
 p_male <- e0_LAD |>
   filter(sex == 1) |>
   ggplot(aes(x = `ex`, y = 1, fill = after_stat(x))) +
   ridge_skeleton +
-  scale_fill_continuous_sequential(
-    palette = "Reds",
-    rev = FALSE,
-    name = str_c("Life expectancy, men"),
-    n.breaks = 5
-  )
+  level_scale_male
+
+grid <- plot_grid(
+  level_df_female |>
+    ggplot(aes(fill = `ex`)) +
+    map_skeleton +
+    level_scale_female,
+  level_df_male |>
+    ggplot(aes(fill = `ex`)) +
+    map_skeleton +
+    level_scale_male
+)
 
 grid <- ggdraw(grid) +
-  draw_plot(p_female, -0.35, -0.15, scale = 0.11) +
-  draw_plot(p_male, 0.15, -0.15, scale = 0.11)
+  draw_plot(p_female, -0.1, 0.35, scale = 0.11) +
+  draw_plot(p_male, 0.4, 0.35, scale = 0.11) +
+  draw_plot(london_female, -0.4, -0.1, scale = 0.16) +
+  draw_line(x = c(x = 0.373, 0.164), y = c(0.306, 0.38), size = 0.1) +
+  draw_label("London", x = 0.094, y = 0.491, size = 3) +
+  draw_plot(london_male, -0.4 + 0.5, -0.1, scale = 0.16) +
+  draw_line(x = c(x = 0.373 + 0.5, 0.164 + 0.5), y = c(0.306, 0.38), size = 0.1) +
+  draw_label("London", x = 0.094 + 0.5, y = 0.491, size = 3)
 
 save_plot(
   here(

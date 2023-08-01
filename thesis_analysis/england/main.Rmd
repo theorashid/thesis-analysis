@@ -5,10 +5,6 @@ date: "16/01/2023"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## england msoa
 
 ```{r imports}
