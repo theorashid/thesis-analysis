@@ -183,13 +183,17 @@ for (s in c("male", "female")) {
     as_tibble() |>
     rename(d80q0 = Freq)
 }
+```
 
-median_q_rel_change[["female"]] |>
+```{r}
+median_q_rel_change[["male"]] |>
   group_by(cause) |>
   summarise(
     median_change = median(d80q0) * 100,
     max_change = max(d80q0) * 100,
-    min_change = min(d80q0) * 100
+    min_change = min(d80q0) * 100,
+    n_increase = sum(d80q0 > 0),
+    prop_increase = sum(d80q0 > 0) * 100 / 314
   ) |>
   arrange(median_change)
 ```
