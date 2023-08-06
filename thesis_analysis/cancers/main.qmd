@@ -613,7 +613,7 @@ p_female <- median_q |>
         arrange(match(cause, cause_list[["female"]][-12])) |>
         pull(cause_lab_short)
     ),
-    aes(x, y, label = str_wrap(lbs, 12)),
+    aes(x, y, label = str_wrap(lbs, 10)),
     nudge_x = -0.5,
     hjust = 0,
     size = 1.5
@@ -642,7 +642,7 @@ p_male <- median_q |>
         arrange(match(cause, cause_list[["male"]][-12])) |>
         pull(cause_lab_short)
     ),
-    aes(x, y, label = str_wrap(lbs, 12)),
+    aes(x, y, label = str_wrap(lbs, 10)),
     nudge_x = -0.5,
     hjust = 0,
     size = 1.5
