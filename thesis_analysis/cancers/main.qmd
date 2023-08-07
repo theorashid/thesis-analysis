@@ -755,6 +755,8 @@ for (s in c("female", "male")) {
       parse = T
     )
 
+  # p <- ggdraw(p) +
+  #   draw_label(sex_filter, x = 0.04, y = 0.97, size = 6, fontface = "bold")
 
   save_plot(
     here(
@@ -855,6 +857,9 @@ for (s in c("female", "male")) {
       axis.ticks.x = element_blank()
     )
 
+  # p <- ggdraw(p) +
+  #   draw_label(sex_lab, x = 0.04, y = 0.97, size = 6, fontface = "bold")
+
   save_plot(
     here(
       "thesis_analysis",
@@ -933,6 +938,9 @@ for (s in c("female", "male")) {
       axis.text.x = element_blank(),
       axis.ticks.x = element_blank()
     )
+
+  # p <- ggdraw(p) +
+  #   draw_label(sex_lab, x = 0.04, y = 0.97, size = 6, fontface = "bold")
 
   save_plot(
     here(
