@@ -63,7 +63,10 @@ level_scale_female <- scale_fill_continuous_sequential(
   rev = FALSE,
   name = str_c("Life expectancy, women"),
   breaks = breaks_pretty(n = 5),
-  limits = c(min(level_df_female$`ex`) * 0.97, max(level_df_female$`ex`) * 1.03)
+  limits = c(min(level_df_female$`ex`) * 0.97, max(level_df_female$`ex`) * 1.03),
+  l1 = 0,
+  p1 = 2,
+  p2 = 3
 )
 
 level_scale_male <- scale_fill_continuous_sequential(
@@ -71,7 +74,10 @@ level_scale_male <- scale_fill_continuous_sequential(
   rev = FALSE,
   name = str_c("Life expectancy, men"),
   breaks = breaks_pretty(n = 5),
-  limits = c(min(level_df_male$ex) * 0.97, max(level_df_male$ex) * 1.03)
+  limits = c(min(level_df_male$ex) * 0.97, max(level_df_male$ex) * 1.03),
+  l1 = 0,
+  p1 = 2,
+  p2 = 3
 )
 
 london_female <- level_df_female |>
@@ -245,7 +251,7 @@ save_plot(
     "figures",
     "age_mx_time.pdf"
   ),
-  plot_grid(p, p_e0, ncol = 2, rel_widths = c(2, 3))
+  plot_grid(p, p_e0, ncol = 2, rel_widths = c(1, 1))
 )
 ```
 
