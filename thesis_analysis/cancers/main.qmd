@@ -169,6 +169,20 @@ regions <- c(
 ```
 
 ```{r treemap data}
+# deaths in first and last year of study
+# sex  YEAR deaths
+# <int> <int>  <int>
+# 1     1  2002  68529
+# 2     1  2019  76301
+# 3     2  2002  64558
+# 4     2  2019  67150
+# probability of dying in first and last year of study
+# sex  YEAR probability of dying
+# 1     1  2002  0.2235231
+# 2     1  2019  0.1683227
+# 3     2  2002  0.1606879
+# 4     2  2019  0.1289289
+
 tm_df <- bind_rows(
   tribble(
     ~cause, ~cause_lab_short, ~cause_lab, ~deaths,
@@ -176,8 +190,8 @@ tm_df <- bind_rows(
     "Breast cancer", "Breast", "Breast cancer", 177528,
     "Colon and rectum cancers", "Colorectal", "Colorectal cancer", 111364,
     "Pancreas cancer", "Pancreatic", "Pancreatic cancer", 62379,
-    "Ovary cancer", "Ovarian", "Ovarian cacer", 62338,
-    "Lymphomas multiple myeloma", "Lymphomas,\n multiple myeloma", "Lymphomas, multiple myeloma", 54046,
+    "Ovary cancer", "Ovarian", "Ovarian cancer", 62338,
+    "Lymphomas multiple myeloma", "Lymphoma and\n multiple myeloma", "Lymphoma and multiple myeloma", 54046,
     "Oesophagus cancer", "Oesophageal", "Oesophageal cancer", 36806,
     "Leukaemia", "Leukaemia", "Leukaemia", 29465,
     "Corpus uteri cancer", "Corpus uteri", "Corpus uteri cancer", 29000,
@@ -191,7 +205,7 @@ tm_df <- bind_rows(
     "Prostate cancer", "Prostate", "Prostate cancer", 164871,
     "Colon and rectum cancers", "Colorectal", "Colorectal cancer", 129382,
     "Oesophagus cancer", "Oesophageal", "Oesophageal cancer", 75457,
-    "Lymphomas multiple myeloma", "Lymphomas,\n multiple myeloma", "Lymphomas, multiple myeloma", 64734,
+    "Lymphomas multiple myeloma", "Lymphoma and\n multiple myeloma", "Lymphoma and multiple myeloma", 64734,
     "Pancreas cancer", "Pancreatic", "Pancreatic cancer", 61558,
     "Bladder cancer", "Bladder", "Bladder cancer", 51883,
     "Stomach cancer", "Stomach", "Stomach cancer", 45852,
@@ -249,7 +263,11 @@ for (s in c("male", "female")) {
 
 median_q_rel_change[["male"]] |>
   group_by(cause) |>
-  summarise(median(d80q0))
+  summarise(
+    median(d80q0),
+    min(d80q0),
+    max(d80q0)
+  )
 ```
 
 Relative changes:
@@ -277,7 +295,7 @@ for (s in c("male", "female")) {
   q_rel_change_pp[[s]] <- apply(
     X = (cause_q[[s]]["2019", , , ] - cause_q[[s]]["2002", , , ]),
     MARGIN = c(1, 3),
-    FUN = \(x) sum(x < 0) / dim(cause_q[[s]])[3]
+    FUN = \(x) sum(x > 0) / dim(cause_q[[s]])[3]
   ) |>
     as.data.frame.table(stringsAsFactors = FALSE) |>
     as_tibble() |>
@@ -287,9 +305,49 @@ for (s in c("male", "female")) {
 q_rel_change_pp[["female"]] |>
   group_by(cause) |>
   summarise(
-    big_decrease = sum(pp_d80q0 > 0.8) / 314,
-    big_increase = sum(pp_d80q0 < 0.2) / 314
+    big_decrease = sum(pp_d80q0 < 0.2),
+    big_increase = sum(pp_d80q0 > 0.8),
+    bigger_increase = sum(pp_d80q0 > 0.98),
+    bigger_decrease = sum(pp_d80q0 < 0.01)
   )
+```
+
+```{r}
+q_rel_change_pp[["male"]] |>
+  group_by(cause) |>
+  summarise(
+    big_increase = sum(pp_d80q0 > 0.8)
+  )
+
+q_rel_change_pp[["female"]] |>
+  filter(cause == "Trachea bronchus lung cancers" | cause == "Pancreas cancer" | cause == "Corpus uteri cancer") |>
+  pivot_wider(names_from = "cause", values_from = "pp_d80q0") |>
+  mutate(
+    three_increase = ifelse(
+      `Trachea bronchus lung cancers` > 0.8 & `Pancreas cancer` > 0.8 & `Corpus uteri cancer` > 0.8,
+      TRUE,
+      FALSE
+    ),
+    two_increase = ifelse(
+      `Pancreas cancer` > 0.8 & `Corpus uteri cancer` > 0.8,
+      TRUE,
+      FALSE
+    )
+  ) |>
+  filter(two_increase == TRUE)
+
+# oesophageal not > 0.8 in any district
+q_rel_change_pp[["male"]] |>
+  filter(cause == "Pancreas cancer" | cause == "Liver cancer") |>
+  pivot_wider(names_from = "cause", values_from = "pp_d80q0") |>
+  mutate(
+    two_increase = ifelse(
+      `Pancreas cancer` > 0.8 & `Liver cancer` > 0.8,
+      TRUE,
+      FALSE
+    )
+  ) |>
+  filter(two_increase == TRUE)
 ```
 
 ## treemap
@@ -671,15 +729,39 @@ save_plot(
 Correlation of each cancer with poverty:
 
 ```{r correlation with poverty}
+# correlations <- lst()
+# for (s in c("female", "male")) {
+#   correlations[[s]] <- median_q |>
+#     pluck(s) |>
+#     filter(year == 2019) |>
+#     mutate(LAD2020 = LAD) |>
+#     left_join(imd |> select(LAD2020, `income rank`)) |>
+#     group_by(cause) |>
+#     summarise(correlation = cor(`80q0`, `income rank`, method = "spearman"))
+# }
+```
+
+```{r correlation with poverty CrI}
 correlations <- lst()
 for (s in c("female", "male")) {
-  correlations[[s]] <- median_q |>
-    pluck(s) |>
-    filter(year == 2019) |>
-    mutate(LAD2020 = LAD) |>
-    left_join(imd |> select(LAD2020, `income rank`)) |>
-    group_by(cause) |>
-    summarise(correlation = cor(`80q0`, `income rank`, method = "spearman"))
+  # identical(imd$LAD2020, dimnames(cause_q[[s]])$LAD)
+  correlations[[s]] <- apply(
+    cause_q[[s]]["2019", , , ],
+    FUN = cor,
+    MARGIN = c(2, 3),
+    y = imd$`income rank`,
+    method = "spearman"
+  ) |>
+    apply(
+      FUN = quantile,
+      MARGIN = 2,
+      p = c(0.025, 0.5, 0.975)
+    ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(quantile = Var1, correlation = Freq) |>
+    arrange() |>
+    pivot_wider(names_from = quantile, values_from = correlation)
 }
 ```
 
@@ -734,23 +816,40 @@ for (s in c("female", "male")) {
     geom_text(
       data = correlations |>
         pluck(s) |>
-        left_join(tm_df |> filter(sex == sex_filter)) |>
-        mutate(cause_lab = replace_na(cause_lab, "All cancers")),
+        left_join(
+          tm_df |>
+          filter(sex == sex_filter)
+        ) |>
+          mutate(cause_lab = replace_na(cause_lab, "All cancers")
+        ),
       aes(label = str_c("  = ", format(round(correlation, 2), nsmall = 2))),
+      # aes(label = str_c(
+      #     "  = ",
+      #     format(round(`50%`, 2), nsmall = 2),
+      #     " (",
+      #     format(round(`2.5%`, 2), nsmall = 2),
+      #     "-",
+      #     format(round(`97.5%`, 2), nsmall = 2),
+      #     ")"
+      #   )
+      # ),
       x = -Inf,
       y = Inf,
       hjust = -0.1,
       vjust = 1,
       size = 1.8,
+      # size = 1.4,
       colour = "black"
     ) +
     geom_text(
       label = "rho",
       x = -Inf,
       y = Inf,
+      # hjust = -0.4,
       hjust = -0.2,
       vjust = 1.2,
       size = 2,
+      # size = 1.8,
       colour = "black",
       parse = T
     )
@@ -774,7 +873,7 @@ for (s in c("female", "male")) {
 
 ```{r calculate quantiles 80q0 in 2002 and 2019}
 quantile_q <- lst()
-for (s in c("male", "female")) {
+for (s in c("female", "male")) {
   quantile_q[[s]] <- apply(
     X = cause_q[[s]][c("2002", "2019"), , , ],
     MARGIN = c(1, 2, 4),
@@ -803,6 +902,27 @@ quantile_q |>
   filter(cause == "All cancers") |>
   arrange(-`50%`) |>
   select(-c(LAD, LAD2020, GOR2011, cause))
+```
+
+```{r}
+for (s in c("female", "male")) {
+  print(s)
+  max_min_LAD_id <- median_q[[s]] |>
+    filter(year == 2019) |>
+    group_by(cause) |>
+    summarise(LAD_max = LAD[which.max(`80q0`)], LAD_min = LAD[which.min(`80q0`)])
+
+  for (i in seq(max_min_LAD_id$cause)) {
+    print(max_min_LAD_id[i,]$cause)
+    print(
+      (
+        cause_q[[s]]["2019", max_min_LAD_id[i,]$LAD_max, , max_min_LAD_id[i,]$cause] /
+        cause_q[[s]]["2019", max_min_LAD_id[i,]$LAD_min, , max_min_LAD_id[i,]$cause]
+      ) |>
+        quantile(p = c(0.025, 0.5, 0.975))
+    )
+  }
+}
 ```
 
 Inequality of probability of death:
@@ -948,6 +1068,114 @@ for (s in c("female", "male")) {
       "cancers",
       "figures",
       str_c(s, "_change_distribution", ".pdf")
+    ),
+    p
+  )
+}
+```
+
+## Compare to ASDR
+
+```{r data}
+cause_asdr <- lst(
+  male = read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_male_",
+        args$model,
+        "_cancers_asdr.rds"
+      )
+    )
+  ),
+  female = read_rds(
+    here(
+      "data",
+      "life_table",
+      str_c(
+        args$region,
+        "_female_",
+        args$model,
+        "_cancers_asdr.rds"
+      )
+    )
+  )
+)
+```
+
+```{r calculate median 80q0 over time}
+median_asdr <- lst()
+for (s in c("male", "female")) {
+  median_asdr[[s]] <- apply(
+    X = cause_asdr[[s]],
+    MARGIN = c(1, 2, 4),
+    FUN = median
+  ) |>
+    as.data.frame.table(stringsAsFactors = FALSE) |>
+    as_tibble() |>
+    rename(`asdr` = Freq) |>
+    mutate(year = as.integer(year)) |>
+    arrange()
+}
+```
+
+```{r}
+for (s in c("male", "female")) {
+  asdr_q_comp <-  left_join(median_q[[s]], median_asdr[[s]]) |>
+      filter(year == 2002 | year == 2019)
+
+  print(
+    asdr_q_comp |>
+      group_by(cause, year) |>
+      summarise(corr = cor(`80q0`, asdr)),
+    n = 24
+  )
+
+  if (s == "female") {
+    dist_pal <- c(desaturate(sex_pal[2], amount = 0.9), sex_pal[2])
+    sex_lab <- "Women"
+  } else {
+    dist_pal <- c(desaturate(sex_pal[1], amount = 0.9), sex_pal[1])
+    sex_lab <- "Men"
+  }
+
+  p <- asdr_q_comp |>
+    left_join(tm_df |> filter(sex == sex_lab)) |>
+    mutate(cause_lab = replace_na(cause_lab, "All cancers")) |>
+    filter(cause != "All cancers") |>
+    ggplot(aes(x = asdr * 100000, y = `80q0`, colour = as.factor(year))) +
+    geom_point(size = 0.3, stroke = 0.1, shape = 16) +
+    facet_wrap(
+      ~ factor(cause_lab, levels = cause_lab_levels[[s]]),
+      scales = "free",
+      labeller = label_wrap_gen(20)
+    ) +
+    labs(
+      x = "Age-standardised death rate (per 100,000 people)",
+      y = "Probability of dying between birth and 80 years of age"
+    ) +
+    scale_colour_manual(
+      values = dist_pal,
+      name = ""
+    ) +
+    guides(colour = guide_legend(override.aes = list(size = 1, linewidth = 0.5))) +
+    theme_thesis() +
+    theme(
+      legend.position = "top",
+      axis.title.x = element_text(hjust = 0.8)
+    )
+
+  p <- ggdraw(p) +
+    draw_label(sex_lab, x = 0.04, y = 0.97, size = 6, fontface = "bold")
+
+  save_plot(
+    here(
+      "thesis_analysis",
+      "cancers",
+      "figures",
+      str_c(s, "_asdr_q_comp", ".pdf")
     ),
     p
   )

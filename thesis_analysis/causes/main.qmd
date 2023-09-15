@@ -268,7 +268,7 @@ cause_names <- tribble(
   "Oesophagus cancer", "Oesophagus cancer", "Oesophageal cancer", "cancer", "male",
   "Prostate cancer", "Prostate cancer", "Prostate cancer", "cancer", "male",
   "Pancreas cancer", "Pancreas cancer", "Pancreatic cancer", "cancer", "female",
-  "Lymphomas multiple myeloma", "Lymphomas, multiple myeloma", "Lymphomas, multiple myeloma", "cancer", "both",
+  "Lymphomas multiple myeloma", "Lymphomas, multiple myeloma", "Lymphoma and multiple myeloma", "cancer", "both",
   "All other cancers", "All other cancers", "All other cancers", "cancer", "both",
   "Ischaemic heart disease", "Ischaemic heart disease", "Ischaemic heart disease", "CVD", "both",
   "Cerebrovascular disease", "Cerebrovascular disease", "Stroke", "CVD", "both",
@@ -776,7 +776,9 @@ for (s in sexes) {
               min = min(Dx),
               max = max(Dx),
               max_min = max(Dx) - min(Dx),
-              q90_q10 = quantile(Dx, 0.9) - quantile(Dx, 0.1)
+              q90_q10 = quantile(Dx, 0.9) - quantile(Dx, 0.1),
+              contrib_pos = sum(Dx > 0),
+              contrib_neg = sum(Dx < 0)
             ) |>
             arrange(q90_q10)
         )
@@ -977,7 +979,9 @@ for (s in sexes) {
         min = min(Dx),
         max = max(Dx),
         max_min = max(Dx) - min(Dx),
-        q90_q10 = quantile(Dx, 0.9) - quantile(Dx, 0.1)
+        q90_q10 = quantile(Dx, 0.9) - quantile(Dx, 0.1),
+        contrib_pos = sum(Dx > 0),
+        contrib_neg = sum(Dx < 0)
       ) |>
       arrange(q90_q10)
   )
