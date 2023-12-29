@@ -150,6 +150,56 @@ median_e0_change <- apply(
   rename(de0 = Freq)
 ```
 
+## Uncertainty
+```{r calculate quantiles e0 in 2002 and 2019}
+quantile_e0 <- apply(
+  X = e0[, c("2002", "2019"), , ],
+  MARGIN = c(1, 2, 3),
+  FUN = quantile,
+  p = c(0.025, 0.5, 0.975)
+) |>
+  as.data.frame.table(stringsAsFactors = FALSE) |>
+  as_tibble() |>
+  rename(quantile = Var1, `e0` = Freq) |>
+  arrange() |>
+  pivot_wider(names_from = quantile, values_from = `e0`) |>
+  group_by(sex, year) |>
+  mutate(rank = rank(`50%`)) |>
+  ungroup()
+```
+
+```{r uncertainty plot}
+p <- quantile_e0 |>
+  filter(year == 2019) |>
+  mutate(CrI = `97.5%` - `2.5%`) |>
+  mutate(sex = factor(sex, levels = sexes)) |>
+  ggplot(aes(x = `50%`, y = CrI, colour = sex)) +
+  geom_point(
+    size = 0.2,
+    alpha = 0.8,
+    shape = 16
+  ) +
+  facet_wrap(~ factor(sex, levels = sexes)) +
+  scale_colour_manual(values = rev(sex_pal), name = "") +
+  scale_x_continuous(breaks = breaks_pretty(8)) +
+  labs(x = "Life expectancy in 2019 (median)", y = "95% credible interval of life expectancy") +
+  theme_thesis() +
+  theme(
+    legend.position = "top",
+    strip.text = element_blank()
+  )
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "london",
+    "figures",
+    "uncertainty.pdf"
+  ),
+  p
+)
+```
+
 ## maps
 
 ```{r map level 2019}

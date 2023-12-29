@@ -354,6 +354,40 @@ save_plot(
 )
 ```
 
+## Uncertainty
+
+```{r uncertainty plot}
+p <- quantile_e0 |>
+  filter(year == 2019) |>
+  mutate(CrI = `97.5%` - `2.5%`) |>
+  mutate(sex = factor(sex, levels = sexes)) |>
+  ggplot(aes(x = `50%`, y = CrI, colour = sex)) +
+  geom_point(
+    size = 0.2,
+    alpha = 0.8,
+    shape = 16
+  ) +
+  facet_wrap(~ factor(sex, levels = sexes)) +
+  scale_colour_manual(values = rev(sex_pal), name = "") +
+  scale_x_continuous(breaks = breaks_pretty(8)) +
+  labs(x = "Life expectancy in 2019 (median)", y = "95% credible interval of life expectancy") +
+  theme_thesis() +
+  theme(
+    legend.position = "top",
+    strip.text = element_blank()
+  )
+
+save_plot(
+  here(
+    "thesis_analysis",
+    "england",
+    "figures",
+    "uncertainty.pdf"
+  ),
+  p
+)
+```
+
 ## time series
 
 ```{r time series plot}
